@@ -1,11 +1,12 @@
 module Grassmann
 
 # isometric W (representative of equivalence class)
-# tangent vectors Δ = W⟂ * B = Q * R = U * S * V with W'*Z = W'*U = 0
-# tangent vectors are represented as either `Δ`, `(Q,R)` or `U, S, V`
+# tangent vectors Δ = W⟂ * B = Q * R = U * S * V with W'*Q = W'*U = 0
+
 using TensorKit
 import TensorKit: similarstoragetype, fusiontreetype, StaticLength
 
+# special type to store tangent vectors; store svd inline upon first creation
 mutable struct GrassmannTangent{T<:AbstractTensorMap,T1,T2,T3}
     tangent::T
     svd::Union{Nothing,Tuple{T1,T2,T3}}
