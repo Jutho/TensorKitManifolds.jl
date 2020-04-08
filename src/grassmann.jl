@@ -6,7 +6,7 @@ module Grassmann
 
 using TensorKit
 import TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
-import ..TensorKitIsometries: base, checkbase, projectantihermitian!
+import ..TensorKitManifolds: base, checkbase, projectantihermitian!
 
 # special type to store tangent vectors using Z
 # add SVD of Z = U*S*V upon first creation

@@ -1,6 +1,6 @@
-name = "TensorKitIsometries"
-uuid = "c146d51d-e3d6-4b92-b900-dec265c03167"
-authors = ["Jutho Haegeman <jutho.haegeman@ugent.be>"]
+name = "TensorKitManifolds"
+uuid = "11fa318c-39cb-4a83-b1ed-cdc7ba1e3684"
+authors = ["Jutho Haegeman"]
 version = "0.1.0"
 
 [deps]

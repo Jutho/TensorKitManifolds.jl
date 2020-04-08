@@ -1,4 +1,4 @@
-module TensorKitIsometries
+module TensorKitManifolds
 
 export base, checkbase, isisometry, isunitary
 export projecthermitian, projecthermitian!, projectantihermitian, projectantihermitian!

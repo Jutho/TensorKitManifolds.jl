@@ -6,7 +6,7 @@ module Stiefel
 
 using TensorKit
 import TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
-import ..TensorKitIsometries: base, checkbase, projectantihermitian!
+import ..TensorKitManifolds: base, checkbase, projectantihermitian!
 
 # special type to store tangent vectors using A and Z = W⟂*B,
 # add SVD of Z = U*S*V upon first creation, as well as A2 = [V*A*V' -S; S 0]
