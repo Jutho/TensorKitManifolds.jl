@@ -6,7 +6,7 @@ module Stiefel
 
 using TensorKit
 import TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
-import ..TensorKitManifolds: base, checkbase, projectantihermitian!
+import ..TensorKitManifolds: base, checkbase, projecthermitian!, projectantihermitian!
 
 # special type to store tangent vectors using A and Z = W⟂*B,
 # add SVD of Z = U*S*V upon first creation, as well as A2 = [V*A*V' -S; S 0]
@@ -151,6 +151,53 @@ TensorKit.norm(Δ::StiefelTangent, p::Real = 2) =
     norm((norm(Δ.A, p), norm(Δ.Z, p)), p)
 
 # tangent space methods
+function inner(W::AbstractTensorMap, Δ₁::StiefelTangent, Δ₂::StiefelTangent;
+                metric = :euclidean)
+    if metric == :euclidean
+        return inner_euclidean(W, Δ₁, Δ₂)
+    elseif metric == :canonical
+        return inner_canonical(W, Δ₁, Δ₂)
+    else
+        throw(ArgumentError("unknown metric: $metric"))
+    end
+end
+function project!(X::AbstractTensorMap, W::AbstractTensorMap; metric = :euclidean)
+    if metric == :euclidean
+        return project_euclidean!(X, W)
+    elseif metric == :canonical
+        return project_canonical!(W, W)
+    else
+        throw(ArgumentError("unknown metric: `metric = $metric`"))
+    end
+end
+project(X::AbstractTensorMap, W::AbstractTensorMap; metric = :euclidean) =
+    project!(copy(X), W; metric = metric)
+
+function retract(W::AbstractTensorMap, Δ::StiefelTangent, α::Real; alg = :exp)
+    if alg == :exp
+        return retract_exp(W, Δ, α)
+    elseif alg == :cayley
+        return retract_cayley(W, Δ, α)
+    else
+        throw(ArgumentError("unknown algorithm: `alg = $metric`"))
+    end
+end
+function transport!(Θ::StiefelTangent, W::AbstractTensorMap, Δ::StiefelTangent, α::Real, W′;
+                    alg = :exp)
+    if alg == :exp
+        return transport_exp!(Θ, W, Δ, α, W′)
+    elseif alg == :cayley
+        return transport_cayley!(Θ, W, Δ, α, W′)
+    else
+        throw(ArgumentError("unknown algorithm: `alg = $metric`"))
+    end
+end
+function transport(Θ::StiefelTangent, W::AbstractTensorMap, Δ::StiefelTangent, α::Real, W′;
+                    alg = :exp)
+    return transport!(copy(Θ), W, Δ, α, W′; alg = alg)
+end
+
+# euclidean metric
 function inner_euclidean(W::AbstractTensorMap, Δ₁::StiefelTangent, Δ₂::StiefelTangent)
     Δ₁ === Δ₂ ? norm(Δ₁)^2 : real(dot(Δ₁,Δ₂))
 end
@@ -162,10 +209,7 @@ function project_euclidean!(X::AbstractTensorMap, W::AbstractTensorMap)
 end
 project_euclidean(X, W) = project_euclidean!(copy(X), W)
 
-const inner = inner_euclidean
-const project! = project_euclidean!
-const project = project_euclidean
-
+# canonical metric
 function inner_canonical(W::AbstractTensorMap, Δ₁::StiefelTangent, Δ₂::StiefelTangent)
     if Δ₁ === Δ₂
         return (norm(Δ₁.A)^2)/2 + norm(Δ₁.Z)^2
@@ -181,29 +225,30 @@ function project_canonical!(X::AbstractTensorMap, W::AbstractTensorMap)
 end
 project_canonical(X, W) = project_canonical!(copy(X), W)
 
-# geodesic retraction for canonical metric
+# geodesic retraction for canonical metric using exponential
 # can be computed efficiently: O(np^2) + O(p^3)
-function retract(W::AbstractTensorMap, Δ::StiefelTangent, α)
-    W === Δ.W || throw(ArgumentError("not a valid tangent vector at base point"))
+function retract_exp(W::AbstractTensorMap, Δ::StiefelTangent, α::Real)
+    W === base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
     A, Z, U, S, V, A2 = Δ.A, Δ.Z, Δ.U, Δ.S, Δ.V, Δ.A2
     UU = catdomain(W*V', U)
     VV = catcodomain(V, zero(V))
     SVV = catcodomain(zero(V), S*V)
     E = exp(α*A2)
-    UU′ = UU*E
+    # UU′, = leftorth!(UU*E; alg = QRpos()) # additional QRpos for stability
+    UU′ = UU*E # no additional QRpos because it changes domain
     W′ = UU′*VV
     A′ = A
     Z′ = UU′*SVV
     return W′, StiefelTangent(W′, A′, Z′)
 end
 
-# vector transport compatible with above retraction
+# vector transport compatible with above `retract`: also differentiated retraction
 # isometric for both euclidean and canonical metric
-# not parallel transport for either metric as the corresponds connection has torsion
+# not parallel transport for either metric as the corresponding connection has torsion
 # can be computed efficiently: O(np^2) + O(p^3)
-function transport!(Θ::StiefelTangent, W::AbstractTensorMap, Δ::StiefelTangent, α, W′)
-    W === Δ.W || throw(ArgumentError("not a valid tangent vector at base point"))
-    checkbase(Δ, Θ)
+function transport_exp!(Θ::StiefelTangent, W::AbstractTensorMap,
+                        Δ::StiefelTangent, α::Real, W′)
+    W === checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V, A2 = Δ.U, Δ.S, Δ.V, Δ.A2
     UU = catdomain(W*V', U)
     P = catcodomain(zero(S), one(S))
@@ -213,7 +258,38 @@ function transport!(Θ::StiefelTangent, W::AbstractTensorMap, Δ::StiefelTangent
     Z′ = Θ.Z + UU*(((E-one(E))*P)*(U'*Θ.Z))
     return StiefelTangent(W′, A′, Z′)
 end
-transport(Θ::StiefelTangent, W::AbstractTensorMap, Δ::StiefelTangent, α, W′) =
-    transport!(copy(Θ), W, Δ, α, W′)
+transport_exp(Θ::StiefelTangent, W::AbstractTensorMap, Δ::StiefelTangent, α::Real, W′) =
+    transport_exp!(copy(Θ), W, Δ, α, W′)
+
+# Cayley retraction, slightly more efficient than above?
+# can be computed efficiently: O(np^2) + O(p^3)
+function retract_cayley(W::AbstractTensorMap, Δ::StiefelTangent, α::Real)
+    W === base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
+    A, Z = Δ.A, Δ.Z
+    ZdZ = Z'*Z
+    X = axpy!(α^2/4, ZdZ, axpy!(-α/2, A, one(A)))
+    iX = inv(X)
+    W′ = (2*W+α*Z)*iX - W
+    A′ = projectantihermitian!((A - (α/2)*ZdZ)*iX)
+    Z′ = (Z-α*(W+α/2*Z)*(iX*ZdZ))
+    Z′ = Z′*projecthermitian!(iX)
+    return W′, StiefelTangent(W′, A′, Z′)
+end
+
+# vector transport compatible with above `retract_caley`, but not differentiated retraction
+# isometric for both euclidean and canonical metric
+# can be computed efficiently: O(np^2) + O(p^3)
+function transport_cayley!(Θ::StiefelTangent, W::AbstractTensorMap, Δ::StiefelTangent,
+                            α::Real, W′)
+    W === checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
+    A, Z = Δ.A, Δ.Z
+    X = axpy!(α^2/4, Z'*Z, axpy!(-α/2, A, one(A)))
+    A′ = Θ.A
+    ZdZ = Z'*Θ.Z
+    Z′ = axpy!(-α, (W+(α/2)*Z)*(X\ZdZ), Θ.Z)
+    return StiefelTangent(W′, A′, Z′)
+end
+transport_cayley(Θ::StiefelTangent, W::AbstractTensorMap, Δ::StiefelTangent, α::Real, W′) =
+    transport_cayley!(copy(Θ), W, Δ, α, W′)
 
 end

@@ -9,7 +9,7 @@ jobs:
     strategy:
       matrix:
         version:
-          - '1.0'
+          # - '1.0'
           - '1.4'
           - 'nightly'
         os:

@@ -142,6 +142,7 @@ function inner(W::AbstractTensorMap, Δ₁::GrassmannTangent, Δ₂::GrassmannTa
 end
 
 function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α)
+    W === base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W*V'
     cS = cos(α*S)
@@ -151,11 +152,13 @@ function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α)
     SV = S*V
     cSSV = cS*SV
     sSSV = sS*SV
-    W′ = WVd*cSV + U*sSV
+    # W′, = leftorth!(WVd*cSV + U*sSV; alg = QRpos()) # additional QRpos for stability
+    W′ = WVd*cSV + U*sSV # no additional QRpos since this changes the domain of W′
     return W′, GrassmannTangent(W′, -WVd*sSSV + U*cSSV)
 end
 
 function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′)
+    W === checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W*V'
     cS = cos(α*S)

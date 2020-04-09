@@ -45,5 +45,6 @@ projectantihermitian(W::AbstractTensorMap) = projectantihermitian!(copy(W))
 include("auxiliary.jl")
 include("grassmann.jl")
 include("stiefel.jl")
+include("unitary.jl")
 
 end
