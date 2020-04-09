@@ -1,4 +1,4 @@
-# TensorKitIsometries [![Build Status](https://github.com/Jutho/TensorKitIsometries.jl/workflows/CI/badge.svg)](https://github.com/Jutho/TensorKitIsometries.jl/actions) [![Coverage](https://codecov.io/gh/Jutho/TensorKitIsometries.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/Jutho/TensorKitIsometries.jl)
+# TensorKitManifolds [![Build Status](https://github.com/Jutho/TensorKitManifolds.jl/workflows/CI/badge.svg)](https://github.com/Jutho/TensorKitManifolds.jl/actions) [![Coverage](https://codecov.io/gh/Jutho/TensorKitManifolds.jl/branch/master/graph/badge.svg)](https://codecov.io/gh/Jutho/TensorKitManifolds.jl)
 
 There are three manifolds: Grassmann, Stiefel and Unitary, corresponding to submodules of TensorKitManifolds, whose names are exported.
 
