@@ -65,7 +65,7 @@ end
 
 Base.getindex(Δ::StiefelTangent) = Δ.W * Δ.A + Δ.Z
 base(Δ::StiefelTangent) = Δ.W
-checkbase(Δ₁::StiefelTangent, Δ₂::StiefelTangent) = Δ₁.W === Δ₂.W ? Δ₁.W :
+checkbase(Δ₁::StiefelTangent, Δ₂::StiefelTangent) = Δ₁.W == Δ₂.W ? Δ₁.W :
     throw(ArgumentError("tangent vectors with different base points"))
 
 function Base.getproperty(Δ::StiefelTangent, sym::Symbol)
@@ -228,7 +228,7 @@ project_canonical(X, W) = project_canonical!(copy(X), W)
 # geodesic retraction for canonical metric using exponential
 # can be computed efficiently: O(np^2) + O(p^3)
 function retract_exp(W::AbstractTensorMap, Δ::StiefelTangent, α::Real)
-    W === base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
+    W == base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
     A, Z, U, S, V, A2 = Δ.A, Δ.Z, Δ.U, Δ.S, Δ.V, Δ.A2
     UU = catdomain(W*V', U)
     VV = catcodomain(V, zero(V))
@@ -248,7 +248,7 @@ end
 # can be computed efficiently: O(np^2) + O(p^3)
 function transport_exp!(Θ::StiefelTangent, W::AbstractTensorMap,
                         Δ::StiefelTangent, α::Real, W′)
-    W === checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
+    W == checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V, A2 = Δ.U, Δ.S, Δ.V, Δ.A2
     UU = catdomain(W*V', U)
     P = catcodomain(zero(S), one(S))
@@ -264,7 +264,7 @@ transport_exp(Θ::StiefelTangent, W::AbstractTensorMap, Δ::StiefelTangent, α::
 # Cayley retraction, slightly more efficient than above?
 # can be computed efficiently: O(np^2) + O(p^3)
 function retract_cayley(W::AbstractTensorMap, Δ::StiefelTangent, α::Real)
-    W === base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
+    W == base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
     A, Z = Δ.A, Δ.Z
     ZdZ = Z'*Z
     X = axpy!(α^2/4, ZdZ, axpy!(-α/2, A, one(A)))
@@ -281,7 +281,7 @@ end
 # can be computed efficiently: O(np^2) + O(p^3)
 function transport_cayley!(Θ::StiefelTangent, W::AbstractTensorMap, Δ::StiefelTangent,
                             α::Real, W′)
-    W === checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
+    W == checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
     A, Z = Δ.A, Δ.Z
     X = axpy!(α^2/4, Z'*Z, axpy!(-α/2, A, one(A)))
     A′ = Θ.A

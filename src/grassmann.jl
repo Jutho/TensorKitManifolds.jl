@@ -56,7 +56,7 @@ end
 
 Base.getindex(Δ::GrassmannTangent) = Δ.Z
 base(Δ::GrassmannTangent) = Δ.W
-checkbase(Δ₁::GrassmannTangent, Δ₂::GrassmannTangent) = Δ₁.W === Δ₂.W ? Δ₁.W :
+checkbase(Δ₁::GrassmannTangent, Δ₂::GrassmannTangent) = Δ₁.W == Δ₂.W ? Δ₁.W :
     throw(ArgumentError("tangent vectors with different base points"))
 
 function Base.getproperty(Δ::GrassmannTangent, sym::Symbol)
@@ -142,7 +142,7 @@ function inner(W::AbstractTensorMap, Δ₁::GrassmannTangent, Δ₂::GrassmannTa
 end
 
 function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α)
-    W === base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
+    W == base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W*V'
     cS = cos(α*S)
@@ -158,7 +158,7 @@ function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α)
 end
 
 function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′)
-    W === checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
+    W == checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W*V'
     cS = cos(α*S)

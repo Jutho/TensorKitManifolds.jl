@@ -20,7 +20,7 @@ end
 Base.copy(Δ::UnitaryTangent) = UnitaryTangent(Δ.W, copy(Δ.A))
 Base.getindex(Δ::UnitaryTangent) = Δ.W * Δ.A
 base(Δ::UnitaryTangent) = Δ.W
-checkbase(Δ₁::UnitaryTangent, Δ₂::UnitaryTangent) = Δ₁.W === Δ₂.W ? Δ₁.W :
+checkbase(Δ₁::UnitaryTangent, Δ₂::UnitaryTangent) = Δ₁.W == Δ₂.W ? Δ₁.W :
     throw(ArgumentError("tangent vectors with different base points"))
 
 function Base.getproperty(Δ::UnitaryTangent, sym::Symbol)
@@ -84,7 +84,7 @@ project(X, W) = project!(copy(X), W)
 
 # geodesic retraction, coincides with Stiefel retraction (which is not geodesic for p < n)
 function retract(W::AbstractTensorMap, Δ::UnitaryTangent, α)
-    W === base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
+    W == base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
     E = exp(α*Δ.A)
     # W′, = leftorth!(W*E; alg = QRpos()) # additional QRpos for stability
     W′ = W*E # no additional QRpos as this changes space
@@ -114,7 +114,7 @@ end
 function transport_parallel!(Θ::UnitaryTangent,
                                 W::AbstractTensorMap,
                                 Δ::UnitaryTangent, α, W′)
-    W === checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
+    W == checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
     E = exp((α/2)*Δ.A)
     A′ = projectantihermitian!(E'*Θ.A*E) # exra projection for stability
     return UnitaryTangent(W′, A′)
@@ -125,7 +125,7 @@ transport_parallel(Θ::UnitaryTangent, W::AbstractTensorMap, Δ::UnitaryTangent,
 function transport_stiefel!(Θ::UnitaryTangent,
                                 W::AbstractTensorMap,
                                 Δ::UnitaryTangent, α, W′)
-    W === checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
+    W == checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
     A′ = Θ.A
     return UnitaryTangent(W′, A′)
 end
