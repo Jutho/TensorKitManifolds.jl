@@ -39,8 +39,28 @@ function projectantihermitian!(W::AbstractTensorMap)
     end
     return W
 end
+function projectisometric!(W::AbstractTensorMap;
+                            alg::TensorKit.OrthogonalFactorizationAlgorithm = QRpos())
+    Q, = leftorth!(W; alg = alg)
+    return TensorMap(Q.data, space(W))
+end
+function projectcomplement!(X::AbstractTensorMap, W::AbstractTensorMap;
+                                tol = max(10*eps(real(eltype(X))), eps(norm(X))))
+    P = W'*X
+    nP = norm(P)
+    while nP > tol
+        X = mul!(X, W, P, -1, 1)
+        P = W'*X
+        nP = norm(P)
+    end
+    return X
+end
+
 projecthermitian(W::AbstractTensorMap) = projecthermitian!(copy(W))
 projectantihermitian(W::AbstractTensorMap) = projectantihermitian!(copy(W))
+projectisometric(W::AbstractTensorMap) = projectisometric!(copy(W))
+projectcomplement(X::AbstractTensorMap, W::AbstractTensorMap) =
+    projectcomplement!(copy(X), W)
 
 include("auxiliary.jl")
 include("grassmann.jl")

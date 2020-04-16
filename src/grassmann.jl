@@ -6,7 +6,9 @@ module Grassmann
 
 using TensorKit
 import TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
-import ..TensorKitManifolds: base, checkbase, projectantihermitian!
+import ..TensorKitManifolds: base, checkbase,
+                                projecthermitian!, projectantihermitian!,
+                                projectisometric!, projectcomplement!
 
 # special type to store tangent vectors using Z
 # add SVD of Z = U*S*V upon first creation
@@ -132,8 +134,9 @@ TensorKit.norm(Δ::GrassmannTangent, p::Real = 2) = norm(Δ.Z, p)
 # tangent space methods
 function project!(X::AbstractTensorMap, W::AbstractTensorMap)
     P = W'*X
-    Δ = mul!(X, W, P, -1, 1)
-    return GrassmannTangent(W, Δ)
+    Z = mul!(X, W, P, -1, 1)
+    Z = projectcomplement!(Z, W)
+    return GrassmannTangent(W, Z)
 end
 project(X, W) = project!(copy(X), W)
 
@@ -152,9 +155,9 @@ function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α)
     SV = S*V
     cSSV = cS*SV
     sSSV = sS*SV
-    # W′, = leftorth!(WVd*cSV + U*sSV; alg = QRpos()) # additional QRpos for stability
-    W′ = WVd*cSV + U*sSV # no additional QRpos since this changes the domain of W′
-    return W′, GrassmannTangent(W′, -WVd*sSSV + U*cSSV)
+    W′ = projectisometric!(WVd*cSV + U*sSV)
+    Z′ = projectcomplement!(-WVd*sSSV + U*cSSV, W′)
+    return W′, GrassmannTangent(W′, Z′)
 end
 
 function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′)
@@ -164,7 +167,9 @@ function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTan
     cS = cos(α*S)
     sS = sin(α*S)
     UdΘ = U'*Θ.Z
-    return GrassmannTangent(W′, axpy!(true, U*((cS-one(cS))*UdΘ) - WVd*(sS*UdΘ), Θ.Z))
+    Z′ = axpy!(true, U*((cS-one(cS))*UdΘ) - WVd*(sS*UdΘ), Θ.Z)
+    Z′ = projectcomplement!(Z′, W′)
+    return GrassmannTangent(W′, Z′)
 end
 transport(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′) =
     transport!(copy(Θ), W, Δ, α, W′)

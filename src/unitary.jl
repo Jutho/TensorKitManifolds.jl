@@ -5,7 +5,8 @@ module Unitary
 
 using TensorKit
 import TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
-import ..TensorKitManifolds: base, checkbase, projectantihermitian!
+import ..TensorKitManifolds: base, checkbase,
+                                projectantihermitian!, projectisometric!
 
 mutable struct UnitaryTangent{T<:AbstractTensorMap, TA<:AbstractTensorMap}
     W::T
@@ -86,8 +87,7 @@ project(X, W) = project!(copy(X), W)
 function retract(W::AbstractTensorMap, Δ::UnitaryTangent, α)
     W == base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
     E = exp(α*Δ.A)
-    # W′, = leftorth!(W*E; alg = QRpos()) # additional QRpos for stability
-    W′ = W*E # no additional QRpos as this changes space
+    W′ = projectisometric!(W*E)
     A′ = Δ.A
     return W′, UnitaryTangent(W′, A′)
 end

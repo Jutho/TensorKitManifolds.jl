@@ -6,7 +6,9 @@ module Stiefel
 
 using TensorKit
 import TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
-import ..TensorKitManifolds: base, checkbase, projecthermitian!, projectantihermitian!
+import ..TensorKitManifolds: base, checkbase,
+                                projecthermitian!, projectantihermitian!,
+                                projectisometric!, projectcomplement!
 
 # special type to store tangent vectors using A and Z = W⟂*B,
 # add SVD of Z = U*S*V upon first creation, as well as A2 = [V*A*V' -S; S 0]
@@ -205,6 +207,7 @@ function project_euclidean!(X::AbstractTensorMap, W::AbstractTensorMap)
     P = W'*X
     Z = mul!(X, W, P, -1, 1)
     A = projectantihermitian!(P)
+    Z = projectcomplement!(Z, W)
     return StiefelTangent(W, A, Z)
 end
 project_euclidean(X, W) = project_euclidean!(copy(X), W)
@@ -221,6 +224,7 @@ function project_canonical!(X::AbstractTensorMap, W::AbstractTensorMap)
     P = W'*X
     Z = mul!(X, W, P, -1, 1)
     A = rmul!(projectantihermitian!(P), 2)
+    Z = projectcomplement!(Z, W)
     return StiefelTangent(W, A, Z)
 end
 project_canonical(X, W) = project_canonical!(copy(X), W)
@@ -234,11 +238,10 @@ function retract_exp(W::AbstractTensorMap, Δ::StiefelTangent, α::Real)
     VV = catcodomain(V, zero(V))
     SVV = catcodomain(zero(V), S*V)
     E = exp(α*A2)
-    # UU′, = leftorth!(UU*E; alg = QRpos()) # additional QRpos for stability
-    UU′ = UU*E # no additional QRpos because it changes domain
-    W′ = UU′*VV
+    UU′ = UU*E
+    W′ = projectisometric!(UU′*VV)
     A′ = A
-    Z′ = UU′*SVV
+    Z′ = projectcomplement!(UU′*SVV, W′)
     return W′, StiefelTangent(W′, A′, Z′)
 end
 
@@ -255,7 +258,7 @@ function transport_exp!(Θ::StiefelTangent, W::AbstractTensorMap,
     E = exp(α*A2)
 
     A′ = Θ.A
-    Z′ = Θ.Z + UU*(((E-one(E))*P)*(U'*Θ.Z))
+    Z′ = projectcomplement!(Θ.Z + UU*(((E-one(E))*P)*(U'*Θ.Z)), W′)
     return StiefelTangent(W′, A′, Z′)
 end
 transport_exp(Θ::StiefelTangent, W::AbstractTensorMap, Δ::StiefelTangent, α::Real, W′) =
@@ -269,10 +272,10 @@ function retract_cayley(W::AbstractTensorMap, Δ::StiefelTangent, α::Real)
     ZdZ = Z'*Z
     X = axpy!(α^2/4, ZdZ, axpy!(-α/2, A, one(A)))
     iX = inv(X)
-    W′ = (2*W+α*Z)*iX - W
+    W′ = projectisometric!((2*W+α*Z)*iX - W)
     A′ = projectantihermitian!((A - (α/2)*ZdZ)*iX)
     Z′ = (Z-α*(W+α/2*Z)*(iX*ZdZ))
-    Z′ = Z′*projecthermitian!(iX)
+    Z′ = projectcomplement!(Z′*projecthermitian!(iX), W′)
     return W′, StiefelTangent(W′, A′, Z′)
 end
 
@@ -286,7 +289,7 @@ function transport_cayley!(Θ::StiefelTangent, W::AbstractTensorMap, Δ::Stiefel
     X = axpy!(α^2/4, Z'*Z, axpy!(-α/2, A, one(A)))
     A′ = Θ.A
     ZdZ = Z'*Θ.Z
-    Z′ = axpy!(-α, (W+(α/2)*Z)*(X\ZdZ), Θ.Z)
+    Z′ = projectcomplement!(axpy!(-α, (W+(α/2)*Z)*(X\ZdZ), Θ.Z), W′)
     return StiefelTangent(W′, A′, Z′)
 end
 transport_cayley(Θ::StiefelTangent, W::AbstractTensorMap, Δ::StiefelTangent, α::Real, W′) =
