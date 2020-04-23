@@ -167,7 +167,7 @@ function project!(X::AbstractTensorMap, W::AbstractTensorMap; metric = :euclidea
     if metric == :euclidean
         return project_euclidean!(X, W)
     elseif metric == :canonical
-        return project_canonical!(W, W)
+        return project_canonical!(X, W)
     else
         throw(ArgumentError("unknown metric: `metric = $metric`"))
     end
