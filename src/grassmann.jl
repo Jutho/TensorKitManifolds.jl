@@ -8,7 +8,8 @@ using TensorKit
 import TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
 import ..TensorKitManifolds: base, checkbase,
                                 projecthermitian!, projectantihermitian!,
-                                projectisometric!, projectcomplement!
+                                projectisometric!, projectcomplement!,
+                                inner, retract, transport, transport!
 
 # special type to store tangent vectors using Z
 # add SVD of Z = U*S*V upon first creation
@@ -132,19 +133,20 @@ end
 TensorKit.norm(Δ::GrassmannTangent, p::Real = 2) = norm(Δ.Z, p)
 
 # tangent space methods
-function project!(X::AbstractTensorMap, W::AbstractTensorMap)
+function project!(X::AbstractTensorMap, W::AbstractTensorMap; metric=nothing)
     P = W'*X
     Z = mul!(X, W, P, -1, 1)
     Z = projectcomplement!(Z, W)
     return GrassmannTangent(W, Z)
 end
-project(X, W) = project!(copy(X), W)
+project(X, W; metric=nothing) = project!(copy(X), W; metric=metric)
 
-function inner(W::AbstractTensorMap, Δ₁::GrassmannTangent, Δ₂::GrassmannTangent)
+function inner(W::AbstractTensorMap, Δ₁::GrassmannTangent, Δ₂::GrassmannTangent;
+               metric=nothing)
     Δ₁ === Δ₂ ? norm(Δ₁)^2 : real(dot(Δ₁, Δ₂))
 end
 
-function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α)
+function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α; alg=nothing)
     W == base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W*V'
@@ -160,7 +162,8 @@ function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α)
     return W′, GrassmannTangent(W′, Z′)
 end
 
-function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′)
+function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′;
+                    alg=nothing)
     W == checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W*V'
@@ -171,7 +174,9 @@ function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTan
     Z′ = projectcomplement!(Z′, W′)
     return GrassmannTangent(W′, Z′)
 end
-transport(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′) =
-    transport!(copy(Θ), W, Δ, α, W′)
+function transport(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′;
+                   alg=nothing)
+    return transport!(copy(Θ), W, Δ, α, W′; alg=alg)
+end
 
 end

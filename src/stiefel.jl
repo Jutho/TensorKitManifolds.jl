@@ -8,7 +8,8 @@ using TensorKit
 import TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
 import ..TensorKitManifolds: base, checkbase,
                                 projecthermitian!, projectantihermitian!,
-                                projectisometric!, projectcomplement!
+                                projectisometric!, projectcomplement!,
+                                inner, retract, transport, transport!
 
 # special type to store tangent vectors using A and Z = W⟂*B,
 # add SVD of Z = U*S*V upon first creation, as well as A2 = [V*A*V' -S; S 0]
