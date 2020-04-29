@@ -2,6 +2,7 @@ module TensorKitManifolds
 
 export base, checkbase, isisometry, isunitary
 export projecthermitian, projecthermitian!, projectantihermitian, projectantihermitian!
+export projectisometric, projectisometric!
 export Grassmann, Stiefel, Unitary
 export inner, retract, transport, transport!
 
