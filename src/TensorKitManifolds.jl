@@ -59,8 +59,12 @@ function projectisometric!(W::AbstractTensorMap;
     Q, = leftorth!(W; alg = alg)
     return TensorMap(Q.data, space(W))
 end
+
+# Default tolerance used by projectcomplement(!).
+default_tol(X::AbstractTensorMap) = max(10*eps(real(eltype(X))), eps(norm(X)))
+
 function projectcomplement!(X::AbstractTensorMap, W::AbstractTensorMap;
-                                tol = max(10*eps(real(eltype(X))), eps(norm(X))))
+                            tol = default_tol(X))
     P = W'*X
     nP = norm(P)
     while nP > tol
@@ -73,9 +77,16 @@ end
 
 projecthermitian(W::AbstractTensorMap) = projecthermitian!(copy(W))
 projectantihermitian(W::AbstractTensorMap) = projectantihermitian!(copy(W))
-projectisometric(W::AbstractTensorMap) = projectisometric!(copy(W))
-projectcomplement(X::AbstractTensorMap, W::AbstractTensorMap) =
-    projectcomplement!(copy(X), W)
+
+function projectisometric(W::AbstractTensorMap;
+                          alg::TensorKit.OrthogonalFactorizationAlgorithm = QRpos())
+    return projectisometric!(copy(W); alg=alg)
+end
+
+function projectcomplement(X::AbstractTensorMap, W::AbstractTensorMap,
+                           tol = default_tol(X))
+    return projectcomplement!(copy(X), W; tol=tol)
+end
 
 include("auxiliary.jl")
 include("grassmann.jl")
