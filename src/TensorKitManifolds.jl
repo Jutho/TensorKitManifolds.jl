@@ -2,10 +2,25 @@ module TensorKitManifolds
 
 export base, checkbase, isisometry, isunitary
 export projecthermitian, projecthermitian!, projectantihermitian, projectantihermitian!
+export projectisometric, projectisometric!
 export Grassmann, Stiefel, Unitary
+export inner, retract, transport, transport!
 
 using TensorKit, Strided
 
+# Every submodule -- Grassmann, Stiefel, and Unitary -- implements their own methods for
+# these. The signatures should be
+# inner(W, Δ₁::Tangent, Δ₂::Tangent; metric)
+# retract(W, Δ::Tangent, α::Real; alg)
+# transport(Θ::Tangent, W, Δ::Tangent, α::Real, W′; alg)
+# where the keyword arguments `alg` and `metric` should always be accepted, even if there is
+# only one option for them and they are ignored. The `Tangent` is just a placeholder for the
+# tangent type of each manifold. Similarly each submodule defines a `project!` function,
+# which too should accept a keyword argument `metric`, even if it is ignored.
+function inner end
+function retract end
+function transport end
+function transport! end
 function base end
 function checkbase end
 checkbase(x, y, z, args...) = checkbase(checkbase(x, y), z, args...)
@@ -44,8 +59,12 @@ function projectisometric!(W::AbstractTensorMap;
     Q, = leftorth!(W; alg = alg)
     return TensorMap(Q.data, space(W))
 end
+
+# Default tolerance used by projectcomplement(!).
+default_tol(X::AbstractTensorMap) = max(10*eps(real(eltype(X))), eps(norm(X)))
+
 function projectcomplement!(X::AbstractTensorMap, W::AbstractTensorMap;
-                                tol = max(10*eps(real(eltype(X))), eps(norm(X))))
+                            tol = default_tol(X))
     P = W'*X
     nP = norm(P)
     while nP > tol
@@ -58,9 +77,16 @@ end
 
 projecthermitian(W::AbstractTensorMap) = projecthermitian!(copy(W))
 projectantihermitian(W::AbstractTensorMap) = projectantihermitian!(copy(W))
-projectisometric(W::AbstractTensorMap) = projectisometric!(copy(W))
-projectcomplement(X::AbstractTensorMap, W::AbstractTensorMap) =
-    projectcomplement!(copy(X), W)
+
+function projectisometric(W::AbstractTensorMap;
+                          alg::TensorKit.OrthogonalFactorizationAlgorithm = QRpos())
+    return projectisometric!(copy(W); alg=alg)
+end
+
+function projectcomplement(X::AbstractTensorMap, W::AbstractTensorMap,
+                           tol = default_tol(X))
+    return projectcomplement!(copy(X), W; tol=tol)
+end
 
 include("auxiliary.jl")
 include("grassmann.jl")

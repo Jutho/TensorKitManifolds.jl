@@ -8,7 +8,8 @@ using TensorKit
 import TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
 import ..TensorKitManifolds: base, checkbase,
                                 projecthermitian!, projectantihermitian!,
-                                projectisometric!, projectcomplement!
+                                projectisometric!, projectcomplement!,
+                                inner, retract, transport, transport!
 
 # special type to store tangent vectors using A and Z = W⟂*B,
 # add SVD of Z = U*S*V upon first creation, as well as A2 = [V*A*V' -S; S 0]
@@ -167,7 +168,7 @@ function project!(X::AbstractTensorMap, W::AbstractTensorMap; metric = :euclidea
     if metric == :euclidean
         return project_euclidean!(X, W)
     elseif metric == :canonical
-        return project_canonical!(W, W)
+        return project_canonical!(X, W)
     else
         throw(ArgumentError("unknown metric: `metric = $metric`"))
     end

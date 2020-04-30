@@ -6,7 +6,8 @@ module Unitary
 using TensorKit
 import TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
 import ..TensorKitManifolds: base, checkbase,
-                                projectantihermitian!, projectisometric!
+                                projectantihermitian!, projectisometric!,
+                                inner, retract, transport, transport!
 
 mutable struct UnitaryTangent{T<:AbstractTensorMap, TA<:AbstractTensorMap}
     W::T
@@ -73,18 +74,18 @@ end
 TensorKit.norm(Δ::UnitaryTangent, p::Real = 2) = norm(Δ.A, p)
 
 # tangent space methods
-function inner(W::AbstractTensorMap, Δ₁::UnitaryTangent, Δ₂::UnitaryTangent)
+function inner(W::AbstractTensorMap, Δ₁::UnitaryTangent, Δ₂::UnitaryTangent; metric=nothing)
     Δ₁ === Δ₂ ? norm(Δ₁)^2 : real(dot(Δ₁,Δ₂))
 end
-function project!(X::AbstractTensorMap, W::AbstractTensorMap)
+function project!(X::AbstractTensorMap, W::AbstractTensorMap; metric=nothing)
     P = W'*X
     A = projectantihermitian!(P)
     return UnitaryTangent(W, A)
 end
-project(X, W) = project!(copy(X), W)
+project(X, W; metric=nothing) = project!(copy(X), W; metric=metric)
 
 # geodesic retraction, coincides with Stiefel retraction (which is not geodesic for p < n)
-function retract(W::AbstractTensorMap, Δ::UnitaryTangent, α)
+function retract(W::AbstractTensorMap, Δ::UnitaryTangent, α; alg=nothing)
     W == base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
     E = exp(α*Δ.A)
     W′ = projectisometric!(W*E)
