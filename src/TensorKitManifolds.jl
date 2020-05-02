@@ -54,14 +54,33 @@ function projectantihermitian!(W::AbstractTensorMap)
     end
     return W
 end
-function projectisometric!(W::AbstractTensorMap;
-                            alg::TensorKit.OrthogonalFactorizationAlgorithm = QRpos())
-    Q, = leftorth!(W; alg = alg)
-    return TensorMap(Q.data, space(W))
+
+struct PolarNewton{T<:Real} <: TensorKit.OrthogonalFactorizationAlgorithm
+    tol::T
+end
+function projectisometric!(W::AbstractTensorMap; alg = Polar())
+    if alg isa Polar || alg isa SDD
+        foreach(blocks(W)) do (c,b)
+            _polarsdd!(b)
+        end
+    elseif alg isa SVD
+        foreach(blocks(W)) do (c,b)
+            _polarsvd!(b)
+        end
+    elseif alg isa PolarNewton
+        let tol = alg.tol
+            foreach(blocks(W)) do (c,b)
+                _polarnewton!(b; tol = tol)
+            end
+        end
+    else
+        throw(ArgumentError("unkown algorithm for projectisometric!: alg = $alg"))
+    end
+    return W
 end
 
 # Default tolerance used by projectcomplement(!).
-default_tol(X::AbstractTensorMap) = max(10*eps(real(eltype(X))), eps(norm(X)))
+default_tol(X::AbstractTensorMap) = max(max(dim(X), 10)*eps(real(eltype(X))), eps(norm(X)))
 
 function projectcomplement!(X::AbstractTensorMap, W::AbstractTensorMap;
                             tol = default_tol(X))
@@ -79,10 +98,9 @@ projecthermitian(W::AbstractTensorMap) = projecthermitian!(copy(W))
 projectantihermitian(W::AbstractTensorMap) = projectantihermitian!(copy(W))
 
 function projectisometric(W::AbstractTensorMap;
-                          alg::TensorKit.OrthogonalFactorizationAlgorithm = QRpos())
+                          alg::TensorKit.OrthogonalFactorizationAlgorithm = Polar())
     return projectisometric!(copy(W); alg=alg)
 end
-
 function projectcomplement(X::AbstractTensorMap, W::AbstractTensorMap,
                            tol = default_tol(X))
     return projectcomplement!(copy(X), W; tol=tol)

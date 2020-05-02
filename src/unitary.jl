@@ -93,7 +93,6 @@ function retract(W::AbstractTensorMap, Δ::UnitaryTangent, α; alg=nothing)
     return W′, UnitaryTangent(W′, A′)
 end
 
-
 # isometric vector transports compatible with above retraction (also with differential of retraction)
 function transport!(Θ::UnitaryTangent, W::AbstractTensorMap, Δ::UnitaryTangent, α::Real, W′;
                     alg = :stiefel)

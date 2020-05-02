@@ -7,8 +7,7 @@ const α = 0.75
 
 @testset "Grassmann with space $V" for V in spaces
     for T in (Float64,)
-        Q, R = leftorth(TensorMap(randn, T, V*V*V, V*V))
-        W = Q * isometry(codomain(R), domain(R))
+        W, = leftorth(TensorMap(randn, T, V*V*V, V*V); alg = Polar())
         X = TensorMap(randn, T, space(W))
         Y = TensorMap(randn, T, space(W))
         Δ = @inferred Grassmann.project(X, W)
@@ -44,8 +43,7 @@ end
 
 @testset "Stiefel with space $V" for V in spaces
     for T in (Float64, ComplexF64)
-        Q,R = leftorth(TensorMap(randn, T, V*V*V, V*V))
-        W = Q * isometry(codomain(R), domain(R))
+        W, = leftorth(TensorMap(randn, T, V*V*V, V*V); alg = Polar())
         X = TensorMap(randn, T, space(W))
         Y = TensorMap(randn, T, space(W))
         Δ = @inferred Stiefel.project_euclidean(X, W)
@@ -108,8 +106,7 @@ end
 
 @testset "Unitary with space $V" for V in spaces
     for T in (Float64, ComplexF64)
-        Q,R = leftorth(TensorMap(randn, T, V*V', V'*V))
-        W = Q * unitary(codomain(R), domain(R))
+        W, = leftorth(TensorMap(randn, T, V*V*V, V*V); alg = Polar())
         X = TensorMap(randn, T, space(W))
         Y = TensorMap(randn, T, space(W))
         Δ = @inferred Unitary.project(X, W)
