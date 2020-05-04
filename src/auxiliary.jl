@@ -88,7 +88,7 @@ function _polarsvd!(A::StridedMatrix)
     U, S, V = svd!(A; alg = LinearAlgebra.QRIteration())
     return mul!(A, U, V')
 end
-function _polarnewton!(A::StridedMatrix; tol = min(100, size(A,2)^2)*eps(real(eltype(A))))
+function _polarnewton!(A::StridedMatrix; tol = 10*eleps(A), maxiter = 5)
     m, n = size(A)
     @assert m >= n
     A2 = copy(A)
@@ -99,8 +99,11 @@ function _polarnewton!(A::StridedMatrix; tol = min(100, size(A,2)^2)*eps(real(el
     R2 = view(A, 1:n, 1:n)
     fill!(view(A, n+1:m, 1:n), zero(eltype(A)))
     copyto!(R2, R)
-    while norm(Ri) > tol
-        copyto!(R2, R)
+    while norm(Ri) > n*tol
+        if i == maxiter # if not converged by now, fall back to sdd
+            _polarsdd!(Ri)
+            break
+        end
         Ri = ldiv!(lu!(R2)', _one!(Ri))
         R, Ri = _avgdiff!(R, Ri)
         copyto!(R2, R)
@@ -130,34 +133,24 @@ end
 # Here, Q′ is a set of orthogonal columns to the colums in W′.
 function _stiefelexp(W::StridedMatrix, A::StridedMatrix, Z::StridedMatrix, α)
     n, p = size(W)
-    if 2*p >= n # using n x n matrices
-        U, = qr(W)
-        A2 = similar(A, n, n)
-        A2[1:p, 1:p] .= α .* A
-        Q = fill!(similar(W, n, n-p), 0)
-        R = fill!(similar(W, n-p, p), 0)
-        if p < n
-            for k = 1:n-p
-                Q[p+k,k] = 1
-            end
-            Q = lmul!(U, Q)
-            R = mul!(R, Q', Z)
-            A2[p+1:n, 1:p] .= α .* R
-            A2[1:p, p+1:n] .= (-α) .* R'
-            A2[p+1:n, p+1:n] .= 0
-        end
-        U = [W Q]*exp(A2)
+    if p == n # unitary case
+        Q = zeros(eltype(W), n, 0)
+        R = zeros(eltype(W), 0, n)
+    elseif 2*p >= n # using n x n matrices
+        QQ, _ = qr!(Z*rand(eltype(Z), p, n-p))
+        R = QQ'*Z
+        Q = Matrix(QQ)
     else # using 2p x 2p matrices
         QQ, R = qr(Z)
         Q = Matrix(QQ)
-        A2 = similar(A, 2*p, 2*p)
-        A2[1:p, 1:p] .= α .* A
-        A2[p+1:2p, 1:p] .= α .* R
-        A2[1:p, p+1:2p] .= (-α) .* (R')
-        A2[p+1:2p, p+1:2p] .= 0
-        U = [W Q]*exp(A2)
     end
-    U = _polarnewton!(U; tol = 10*length(U)*eps(real(eltype(U))))
+    A2 = similar(A, min(2*p, n), min(2*p, n))
+    A2[1:p, 1:p] .= α .* A
+    A2[p+1:end, 1:p] .= α .* R
+    A2[1:p, p+1:end] .= (-α) .* (R')
+    A2[p+1:end, p+1:end] .= 0
+    U = [W Q]*exp(A2)
+    U = _polarnewton!(U)
     W′ = U[:,1:p]
     Q′ = U[:,p+1:end]
     R′ = R

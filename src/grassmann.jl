@@ -10,6 +10,7 @@ import ..TensorKitManifolds: base, checkbase,
                                 projecthermitian!, projectantihermitian!,
                                 projectisometric!, projectcomplement!,
                                 inner, retract, transport, transport!
+import Base.Threads
 
 # special type to store tangent vectors using Z
 # add SVD of Z = U*S*V upon first creation
@@ -133,50 +134,81 @@ end
 TensorKit.norm(Δ::GrassmannTangent, p::Real = 2) = norm(Δ.Z, p)
 
 # tangent space methods
-function project!(X::AbstractTensorMap, W::AbstractTensorMap; metric=nothing)
+function project!(X::AbstractTensorMap, W::AbstractTensorMap; metric = :euclidean)
+    @assert metric == :euclidean
     P = W'*X
     Z = mul!(X, W, P, -1, 1)
     Z = projectcomplement!(Z, W)
     return GrassmannTangent(W, Z)
 end
-project(X, W; metric=nothing) = project!(copy(X), W; metric=metric)
+project(X, W; metric = :euclidean) = project!(copy(X), W; metric=metric)
 
 function inner(W::AbstractTensorMap, Δ₁::GrassmannTangent, Δ₂::GrassmannTangent;
-               metric=nothing)
+               metric = :euclidean)
+    @assert metric == :euclidean
     Δ₁ === Δ₂ ? norm(Δ₁)^2 : real(dot(Δ₁, Δ₂))
 end
 
-function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α; alg=nothing)
+function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α; alg = nothing)
     W == base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W*V'
-    cS = cos(α*S)
-    sS = sin(α*S)
-    cSV = cS*V
-    sSV = sS*V
-    SV = S*V
-    cSSV = cS*SV
-    sSSV = sS*SV
+    sSV, cSV = _sincosSV(α, S, V) # sin(S)*V, cos(S)*V
     W′ = projectisometric!(WVd*cSV + U*sSV)
+    sSSV = _lmul!(S, sSV) # sin(S)*S*V
+    cSSV = _lmul!(S, cSV) # cos(S)*S*V
     Z′ = projectcomplement!(-WVd*sSSV + U*cSSV, W′)
     return W′, GrassmannTangent(W′, Z′)
 end
 
 function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′;
-                    alg=nothing)
+                    alg = nothing)
     W == checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W*V'
-    cS = cos(α*S)
-    sS = sin(α*S)
     UdΘ = U'*Θ.Z
-    Z′ = axpy!(true, U*((cS-one(cS))*UdΘ) - WVd*(sS*UdΘ), Θ.Z)
+    sSUdθ, cSUdθ = _sincosSV(α, S, UdΘ) # sin(S)*U'*Θ, cos(S)*U'*Θ
+    cSm1UdΘ = axpy!(-1, UdΘ, cSUdθ) # (cos(S)-1)*U'*Θ
+    Z′ = axpy!(true, U*cSm1UdΘ - WVd*sSUdθ, Θ.Z)
     Z′ = projectcomplement!(Z′, W′)
     return GrassmannTangent(W′, Z′)
 end
 function transport(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′;
-                   alg=nothing)
-    return transport!(copy(Θ), W, Δ, α, W′; alg=alg)
+                   alg = nothing)
+    return transport!(copy(Θ), W, Δ, α, W′; alg = alg)
+end
+
+# auxiliary methods: unsafe, no checking
+# compute sin(α*S)*V and cos(α*S)*V, where S is assumed diagonal
+function _sincosSV(α::Real, S::AbstractTensorMap, V::AbstractTensorMap)
+    # S is assumed diagonal
+    cSV = similar(V)
+    sSV = similar(V)
+    @inbounds for (c,bS) in blocks(S)
+        bcSV = block(cSV,c)
+        bsSV = block(sSV,c)
+        bV = block(V,c)
+        Threads.@threads for j = 1:size(bV,2)
+            @simd for i = 1:size(bV, 1)
+                sS, cS = sincos(α*bS[i,i])
+                bsSV[i,j] = sS*bV[i,j]
+                bcSV[i,j] = cS*bV[i,j]
+            end
+        end
+    end
+    return sSV, cSV
+end
+# multiply V with diagonal S in place, S is assumed diagonal
+function _lmul!(S::AbstractTensorMap, V::AbstractTensorMap)
+    @inbounds for (c,bS) in blocks(S)
+        bV = block(V,c)
+        Threads.@threads for j = 1:size(bV,2)
+            @simd for i = 1:size(bV, 1)
+                bV[i,j] *= bS[i,i]
+            end
+        end
+    end
+    return V
 end
 
 end

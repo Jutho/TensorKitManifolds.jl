@@ -8,7 +8,7 @@ using TensorKit
 import TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
 import ..TensorKitManifolds: base, checkbase,
                                 projecthermitian!, projectantihermitian!,
-                                projectisometric!, projectcomplement!,
+                                projectisometric!, projectcomplement!, PolarNewton,
                                 inner, retract, transport, transport!,
                                 _stiefelexp
 
@@ -210,7 +210,7 @@ function retract_cayley(W::AbstractTensorMap, Δ::StiefelTangent, α::Real)
     ZdZ = Z'*Z
     X = axpy!(α^2/4, ZdZ, axpy!(-α/2, A, one(A)))
     iX = inv(X)
-    W′ = projectisometric!((2*W+α*Z)*iX - W)
+    W′ = projectisometric!((2*W+α*Z)*iX - W; alg = PolarNewton())
     A′ = projectantihermitian!((A - (α/2)*ZdZ)*iX)
     Z′ = (Z-α*(W+α/2*Z)*(iX*ZdZ))
     Z′ = projectcomplement!(Z′*projecthermitian!(iX), W′)

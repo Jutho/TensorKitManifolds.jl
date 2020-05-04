@@ -6,7 +6,7 @@ export projectisometric, projectisometric!
 export Grassmann, Stiefel, Unitary
 export inner, retract, transport, transport!
 
-using TensorKit, Strided
+using TensorKit
 
 # Every submodule -- Grassmann, Stiefel, and Unitary -- implements their own methods for
 # these. The signatures should be
@@ -25,7 +25,10 @@ function base end
 function checkbase end
 checkbase(x, y, z, args...) = checkbase(checkbase(x, y), z, args...)
 
-function isisometry(W::AbstractTensorMap; tol = eps(real(eltype(W))))
+# the machine epsilon for the elements of an object X, name inspired from eltype
+eleps(X) = eps(real(eltype(X)))
+
+function isisometry(W::AbstractTensorMap; tol = 10*eleps(W))
     WdW = W'*W
     s = zero(float(real(eltype(W))))
     for (c,b) in blocks(WdW)
@@ -35,8 +38,8 @@ function isisometry(W::AbstractTensorMap; tol = eps(real(eltype(W))))
     return norm(WdW) <= tol*sqrt(s)
 end
 
-isunitary(W::AbstractTensorMap; tol = eps(real(eltype(W)))) =
-    isisometry(W) && isisometry(W')
+isunitary(W::AbstractTensorMap; tol = 10*eleps(W)) =
+    isisometry(W; tol = tol) && isisometry(W'; tol = tol)
 
 function projecthermitian!(W::AbstractTensorMap)
     codomain(W) == domain(W) ||
@@ -55,23 +58,20 @@ function projectantihermitian!(W::AbstractTensorMap)
     return W
 end
 
-struct PolarNewton{T<:Real} <: TensorKit.OrthogonalFactorizationAlgorithm
-    tol::T
+struct PolarNewton <: TensorKit.OrthogonalFactorizationAlgorithm
 end
 function projectisometric!(W::AbstractTensorMap; alg = Polar())
-    if alg isa Polar || alg isa SDD
+    if alg isa TensorKit.Polar || alg isa TensorKit.SDD
         foreach(blocks(W)) do (c,b)
             _polarsdd!(b)
         end
-    elseif alg isa SVD
+    elseif alg isa TensorKit.SVD
         foreach(blocks(W)) do (c,b)
             _polarsvd!(b)
         end
     elseif alg isa PolarNewton
-        let tol = alg.tol
-            foreach(blocks(W)) do (c,b)
-                _polarnewton!(b; tol = tol)
-            end
+        foreach(blocks(W)) do (c,b)
+            _polarnewton!(b)
         end
     else
         throw(ArgumentError("unkown algorithm for projectisometric!: alg = $alg"))
@@ -79,14 +79,13 @@ function projectisometric!(W::AbstractTensorMap; alg = Polar())
     return W
 end
 
-# Default tolerance used by projectcomplement(!).
-default_tol(X::AbstractTensorMap) = max(max(dim(X), 10)*eps(real(eltype(X))), eps(norm(X)))
-
 function projectcomplement!(X::AbstractTensorMap, W::AbstractTensorMap;
-                            tol = default_tol(X))
+                            tol = 10*eleps(X))
     P = W'*X
     nP = norm(P)
-    while nP > tol
+    nX = norm(X)
+    dP = dim(P)
+    while nP > tol*max(dP, nX)
         X = mul!(X, W, P, -1, 1)
         P = W'*X
         nP = norm(P)
@@ -102,7 +101,7 @@ function projectisometric(W::AbstractTensorMap;
     return projectisometric!(copy(W); alg=alg)
 end
 function projectcomplement(X::AbstractTensorMap, W::AbstractTensorMap,
-                           tol = default_tol(X))
+                           tol = 10*eleps(X))
     return projectcomplement!(copy(X), W; tol=tol)
 end
 
