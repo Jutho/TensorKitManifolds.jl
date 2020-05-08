@@ -5,12 +5,10 @@ module Grassmann
 # with thus W'*Z = 0, W'*U = 0
 
 using TensorKit
-import TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
-import ..TensorKitManifolds: base, checkbase,
-                                projecthermitian!, projectantihermitian!,
-                                projectisometric!, projectcomplement!,
-                                inner, retract, transport, transport!
-import Base.Threads
+using TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
+using ..TensorKitManifolds: projecthermitian!, projectantihermitian!,
+                            projectisometric!, projectcomplement!, PolarNewton
+import ..TensorKitManifolds: base, checkbase, inner, retract, transport, transport!
 
 # special type to store tangent vectors using Z
 # add SVD of Z = U*S*V upon first creation

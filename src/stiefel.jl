@@ -5,12 +5,12 @@ module Stiefel
 # with thus A' = -A, W'*Z = 0, W'*U = 0
 
 using TensorKit
-import TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
+using TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
+using ..TensorKitManifolds: projecthermitian!, projectantihermitian!,
+                            projectisometric!, projectcomplement!, PolarNewton,
+                            _stiefelexp, _stiefellog, eleps
 import ..TensorKitManifolds: base, checkbase,
-                                projecthermitian!, projectantihermitian!,
-                                projectisometric!, projectcomplement!, PolarNewton,
-                                inner, retract, transport, transport!,
-                                _stiefelexp
+                                inner, retract, invretract, transport, transport!
 
 # special type to store tangent vectors using A and Z = Q*R,
 mutable struct StiefelTangent{T<:AbstractTensorMap, TA<:AbstractTensorMap}
@@ -99,7 +99,16 @@ function retract(W::AbstractTensorMap, Δ::StiefelTangent, α::Real; alg = :exp)
     elseif alg == :cayley
         return retract_cayley(W, Δ, α)
     else
-        throw(ArgumentError("unknown algorithm: `alg = $metric`"))
+        throw(ArgumentError("unknown algorithm: `alg = $alg`"))
+    end
+end
+function invretract(Wold::AbstractTensorMap, Wnew::AbstractTensorMap; alg = :exp)
+    if alg == :exp
+        return invretract_exp(Wold, Wnew)
+    elseif alg == :cayley
+        return invretract_cayley(Wold, Wnew)
+    else
+        throw(ArgumentError("unknown algorithm: `alg = $alg`"))
     end
 end
 function transport!(Θ::StiefelTangent, W::AbstractTensorMap, Δ::StiefelTangent, α::Real, W′;
@@ -109,7 +118,7 @@ function transport!(Θ::StiefelTangent, W::AbstractTensorMap, Δ::StiefelTangent
     elseif alg == :cayley
         return transport_cayley!(Θ, W, Δ, α, W′)
     else
-        throw(ArgumentError("unknown algorithm: `alg = $metric`"))
+        throw(ArgumentError("unknown algorithm: `alg = $alg`"))
     end
 end
 function transport(Θ::StiefelTangent, W::AbstractTensorMap, Δ::StiefelTangent, α::Real, W′;
@@ -183,6 +192,23 @@ function retract_exp(W::AbstractTensorMap, Δ::StiefelTangent, α::Real)
     Z′ = projectcomplement!(Q′*R′, W′) # to ensure orthogonality
     return W′, StiefelTangent(W′, A′, Z′)
 end
+function invretract_exp(Wold::AbstractTensorMap, Wnew::AbstractTensorMap;
+                            tol = eleps(Wold)^(2/3))
+    space(Wold) == space(Wnew) || throw(SectorMismatch())
+
+    S = spacetype(Wold)
+    G = sectortype(Wold)
+    Adata = TensorKit.SectorDict{G, storagetype(Wold)}()
+    Zdata = TensorKit.SectorDict{G, storagetype(Wold)}()
+    for c in blocksectors(Wold)
+        a, q, r = _stiefellog(block(Wold, c), block(Wnew, c); tol = tol)
+        Adata[c] = a
+        Zdata[c] = q*r
+    end
+    A = TensorMap(Adata, domain(Wold)←domain(Wold))
+    Z = TensorMap(Zdata, space(Wold))
+    return StiefelTangent(Wold, A, Z)
+end
 
 # vector transport compatible with above `retract`: also differentiated retraction
 # isometric for both euclidean and canonical metric
@@ -215,6 +241,16 @@ function retract_cayley(W::AbstractTensorMap, Δ::StiefelTangent, α::Real)
     Z′ = (Z-α*(W+α/2*Z)*(iX*ZdZ))
     Z′ = projectcomplement!(Z′*projecthermitian!(iX), W′)
     return W′, StiefelTangent(W′, A′, Z′)
+end
+function invretract_cayley(Wnew::AbstractTensorMap, Wold::AbstractTensorMap)
+    space(Wnew) == space(Wold) || throw(SpaceMismatch())
+
+    P = Wold'*Wnew
+    iX = rmul!(axpy!(1,P,one(P)), 1/2)
+    X = inv(iX)
+    Z = projectcomplement!(Wnew - Wold*P, Wold)*X
+    A = projectantihermitian!(rmul!(axpy!(-1, X, mul!(one(X), Z', Z, 1/4, 1)), 2))
+    return StiefelTangent(Wold, A, Z)
 end
 
 # vector transport compatible with above `retract_caley`, but not differentiated retraction

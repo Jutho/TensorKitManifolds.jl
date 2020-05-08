@@ -99,7 +99,7 @@ function _polarnewton!(A::StridedMatrix; tol = 10*eleps(A), maxiter = 5)
     R2 = view(A, 1:n, 1:n)
     fill!(view(A, n+1:m, 1:n), zero(eltype(A)))
     copyto!(R2, R)
-    while norm(Ri) > n*tol
+    while maximum(abs, Ri) > tol
         if i == maxiter # if not converged by now, fall back to sdd
             _polarsdd!(Ri)
             break
@@ -136,10 +136,10 @@ function _stiefelexp(W::StridedMatrix, A::StridedMatrix, Z::StridedMatrix, α)
     if p == n # unitary case
         Q = zeros(eltype(W), n, 0)
         R = zeros(eltype(W), 0, n)
-    elseif 2*p >= n # using n x n matrices
+    elseif 2*p > n # using n x n matrices
         QQ, _ = qr!(Z*rand(eltype(Z), p, n-p))
-        R = QQ'*Z
         Q = Matrix(QQ)
+        R = Q'*Z
     else # using 2p x 2p matrices
         QQ, R = qr(Z)
         Q = Matrix(QQ)
@@ -155,4 +155,72 @@ function _stiefelexp(W::StridedMatrix, A::StridedMatrix, Z::StridedMatrix, α)
     Q′ = U[:,p+1:end]
     R′ = R
     return W′, Q, Q′, R′
+end
+
+function _stiefellog(Wold::StridedMatrix, Wnew::StridedMatrix;
+                        tol = 10*eleps(Wold), maxiter = 100)
+    n, p = size(Wold)
+    P = Wold'*Wnew
+    dW = Wnew - Wold*P
+    if p == n # unitary case
+        Q = zeros(eltype(W), n, 0)
+        R = zeros(eltype(W), 0, n)
+    elseif 2*p > n # using n x n matrices
+        QQ, _ = qr!(dW*rand(eltype(dW), p, n-p))
+        Q = Matrix(QQ)
+        R = Q'*dW
+    else # using 2p x 2p matrices
+        QQ, R = qr(dW)
+        Q = Matrix(QQ)
+    end
+    Wext = [Wold Q];
+    F = qr!([P; R])
+    r = min(2*p, n)
+    U = lmul!(F.Q, _one!(similar(P, r, r)))
+    U[1:p, 1:p] .= P
+    U[p+1:r, 1:p] .= R
+    X = view(U, 1:p, p+1:r)
+    Y = view(U, p+1:r, p+1:r)
+    if p < n
+        r = min(2*p, n)
+        YSVD = svd!(Y)
+        mul!(X, X*(YSVD.V), (YSVD.U)')
+        UsqrtS = YSVD.U
+        @inbounds for j = 1:size(UsqrtS, 2)
+            s = sqrt(YSVD.S[j])
+            @simd for i = 1:size(UsqrtS, 1)
+                UsqrtS[i,j] *= s
+            end
+        end
+        mul!(Y, UsqrtS, UsqrtS')
+    end
+    logU = _projectantihermitian!(log(U))
+    if eltype(U) <: Real
+        @assert maximum(abs ∘ imag, U) <= tol
+        K = real(logU)
+    else
+        K = logU
+    end
+    C = view(K, p+1:r, p+1:r)
+    i = 1
+    τ = maximum(abs, C)
+    while τ > tol
+        if i > maxiter
+            @warn "Stiefel logarithm: not converged in $maxiter iterations, τ = $τ"
+            break
+        end
+        eC = exp(rmul!(C,-1))
+        X .= X*eC
+        Y .= Y*eC
+        logU = _projectantihermitian!(log(U))
+        if eltype(U) <: Real
+            @assert maximum(abs ∘ imag, U) <= tol
+            K .= real.(logU)
+        else
+            K .= logU
+        end
+        τ = maximum(abs, C)
+        i += 1
+    end
+    return K[1:p,1:p], Q, K[p+1:r, 1:p]
 end

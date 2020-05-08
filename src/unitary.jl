@@ -5,9 +5,8 @@ module Unitary
 
 using TensorKit
 import TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
-import ..TensorKitManifolds: base, checkbase,
-                                projectantihermitian!, projectisometric!, PolarNewton,
-                                inner, retract, transport, transport!
+using ..TensorKitManifolds: projectantihermitian!, projectisometric!, PolarNewton
+import ..TensorKitManifolds: base, checkbase, inner, retract, transport, transport!
 
 mutable struct UnitaryTangent{T<:AbstractTensorMap, TA<:AbstractTensorMap}
     W::T

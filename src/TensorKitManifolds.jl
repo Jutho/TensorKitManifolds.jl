@@ -4,7 +4,7 @@ export base, checkbase, isisometry, isunitary
 export projecthermitian, projecthermitian!, projectantihermitian, projectantihermitian!
 export projectisometric, projectisometric!
 export Grassmann, Stiefel, Unitary
-export inner, retract, transport, transport!
+export inner, retract, invretract, transport, transport!
 
 using TensorKit
 
@@ -19,6 +19,7 @@ using TensorKit
 # which too should accept a keyword argument `metric`, even if it is ignored.
 function inner end
 function retract end
+function invretract end
 function transport end
 function transport! end
 function base end
