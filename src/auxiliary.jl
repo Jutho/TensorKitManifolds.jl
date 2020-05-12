@@ -133,17 +133,16 @@ end
 # Here, Q′ is a set of orthogonal columns to the colums in W′.
 function _stiefelexp(W::StridedMatrix, A::StridedMatrix, Z::StridedMatrix, α)
     n, p = size(W)
-    if p == n # unitary case
-        Q = zeros(eltype(W), n, 0)
-        R = zeros(eltype(W), 0, n)
-    elseif 2*p > n # using n x n matrices
-        QQ, _ = qr!(Z*rand(eltype(Z), p, n-p))
-        Q = Matrix(QQ)
-        R = Q'*Z
-    else # using 2p x 2p matrices
-        QQ, R = qr(Z)
-        Q = Matrix(QQ)
+    r = min(2*p, n)
+    QQ, _ = qr!([W Z])
+    Q = similar(W, n, r-p)
+    @inbounds for j = Base.OneTo(r-p)
+        for i = Base.OneTo(n)
+            Q[i,j] = (i == p+j)
+        end
     end
+    Q = lmul!(QQ, Q)
+    R = Q'*Z
     A2 = similar(A, min(2*p, n), min(2*p, n))
     A2[1:p, 1:p] .= α .* A
     A2[p+1:end, 1:p] .= α .* R
@@ -160,29 +159,26 @@ end
 function _stiefellog(Wold::StridedMatrix, Wnew::StridedMatrix;
                         tol = 10*eleps(Wold), maxiter = 100)
     n, p = size(Wold)
+    r = min(2*p, n)
     P = Wold'*Wnew
     dW = Wnew - Wold*P
-    if p == n # unitary case
-        Q = zeros(eltype(W), n, 0)
-        R = zeros(eltype(W), 0, n)
-    elseif 2*p > n # using n x n matrices
-        QQ, _ = qr!(dW*rand(eltype(dW), p, n-p))
-        Q = Matrix(QQ)
-        R = Q'*dW
-    else # using 2p x 2p matrices
-        QQ, R = qr(dW)
-        Q = Matrix(QQ)
+    QQ, _ = qr!([Wold dW])
+    Q = similar(Wold, n, r-p)
+    @inbounds for j = Base.OneTo(r-p)
+        for i = Base.OneTo(n)
+            Q[i,j] = (i == p+j)
+        end
     end
+    Q = lmul!(QQ, Q)
+    R = Q'*dW
     Wext = [Wold Q];
     F = qr!([P; R])
-    r = min(2*p, n)
     U = lmul!(F.Q, _one!(similar(P, r, r)))
     U[1:p, 1:p] .= P
     U[p+1:r, 1:p] .= R
     X = view(U, 1:p, p+1:r)
     Y = view(U, p+1:r, p+1:r)
     if p < n
-        r = min(2*p, n)
         YSVD = svd!(Y)
         mul!(X, X*(YSVD.V), (YSVD.U)')
         UsqrtS = YSVD.U
