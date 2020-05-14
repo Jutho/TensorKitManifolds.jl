@@ -242,7 +242,7 @@ function retract_cayley(W::AbstractTensorMap, Δ::StiefelTangent, α::Real)
     Z′ = projectcomplement!(Z′*projecthermitian!(iX), W′)
     return W′, StiefelTangent(W′, A′, Z′)
 end
-function invretract_cayley(Wnew::AbstractTensorMap, Wold::AbstractTensorMap)
+function invretract_cayley(Wold::AbstractTensorMap, Wnew::AbstractTensorMap)
     space(Wnew) == space(Wold) || throw(SpaceMismatch())
 
     P = Wold'*Wnew
