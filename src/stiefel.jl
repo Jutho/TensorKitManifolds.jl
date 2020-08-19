@@ -5,7 +5,7 @@ module Stiefel
 # with thus A' = -A, W'*Z = 0, W'*U = 0
 
 using TensorKit
-using TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
+using TensorKit: similarstoragetype, SectorDict
 using ..TensorKitManifolds: projecthermitian!, projectantihermitian!,
                             projectisometric!, projectcomplement!, PolarNewton,
                             _stiefelexp, _stiefellog, eleps

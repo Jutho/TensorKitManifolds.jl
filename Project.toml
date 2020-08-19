@@ -1,14 +1,14 @@
 name = "TensorKitManifolds"
 uuid = "11fa318c-39cb-4a83-b1ed-cdc7ba1e3684"
 authors = ["Jutho Haegeman"]
-version = "0.3.0"
+version = "0.4.0"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 TensorKit = "07d1fe3e-3e46-537d-9eac-e9e13d0d4cec"
 
 [compat]
-TensorKit = "0.4, 0.5"
+TensorKit = "0.6 - 1"
 julia = "1"
 
 [extras]

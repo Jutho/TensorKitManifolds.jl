@@ -4,7 +4,7 @@ module Unitary
 # tangent vectors Δ = U*A with A' = -A
 
 using TensorKit
-import TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
+import TensorKit: similarstoragetype, SectorDict
 using ..TensorKitManifolds: projectantihermitian!, projectisometric!, PolarNewton
 import ..TensorKitManifolds: base, checkbase, inner, retract, transport, transport!
 

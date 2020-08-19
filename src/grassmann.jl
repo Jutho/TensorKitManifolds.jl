@@ -5,7 +5,7 @@ module Grassmann
 # with thus W'*Z = 0, W'*U = 0
 
 using TensorKit
-using TensorKit: similarstoragetype, fusiontreetype, StaticLength, SectorDict
+using TensorKit: similarstoragetype, fusiontreetype, SectorDict
 using ..TensorKitManifolds: projecthermitian!, projectantihermitian!,
                             projectisometric!, projectcomplement!, PolarNewton
 import ..TensorKitManifolds: base, checkbase, inner, retract, transport, transport!
@@ -34,9 +34,9 @@ mutable struct GrassmannTangent{T<:AbstractTensorMap,
             TV = TensorMap{S,1,N₂,G,M,Nothing,Nothing}
             return new{T,TU,TS,TV}(W, Z, nothing, nothing, nothing)
         else
-            F = fusiontreetype(G, StaticLength(1))
-            F1 = fusiontreetype(G, StaticLength(N₁))
-            F2 = fusiontreetype(G, StaticLength(N₂))
+            F = fusiontreetype(G, 1)
+            F1 = fusiontreetype(G, N₁)
+            F2 = fusiontreetype(G, N₂)
             D = SectorDict{G,M}
             Dr = SectorDict{G,Mr}
             TU = TensorMap{S,N₁,1,G,D,F1,F}
