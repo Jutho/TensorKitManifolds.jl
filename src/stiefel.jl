@@ -10,7 +10,7 @@ using ..TensorKitManifolds: projecthermitian!, projectantihermitian!,
                             projectisometric!, projectcomplement!, PolarNewton,
                             _stiefelexp, _stiefellog, eleps
 import ..TensorKitManifolds: base, checkbase,
-                                inner, retract, invretract, transport, transport!
+                                inner, retract, transport, transport!
 
 # special type to store tangent vectors using A and Z = Q*R,
 mutable struct StiefelTangent{T<:AbstractTensorMap, TA<:AbstractTensorMap}
