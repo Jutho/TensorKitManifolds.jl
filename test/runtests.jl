@@ -39,6 +39,13 @@ const α = 0.75
         @test Ξ2[] ≈ -Δ2[] + γ * Θ2[]
         @test Grassmann.inner(W2, Δ2, Θ2) ≈ Grassmann.inner(W, Δ, Θ)
         @test Grassmann.inner(W2, Ξ2, Θ2) ≈ Grassmann.inner(W, Ξ, Θ)
+
+        Wend = TensorMap(randhaar, T, codomain(W), domain(W))
+        Δ3, V = Grassmann.invretract(W, Wend)
+        @test Wend ≈ retract(W, Δ3, 1)[1] * V
+        U = Grassmann.matchgauge(W, Wend)
+        V2 = Grassmann.invretract(W, Wend * U)[2]
+        @test V2 ≈ one(V2)
     end
 end
 

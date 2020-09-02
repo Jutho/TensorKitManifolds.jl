@@ -161,6 +161,42 @@ function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α; alg = nothing)
     return W′, GrassmannTangent(W′, Z′)
 end
 
+"""
+    invretract(Wold::AbstractTensorMap, Wnew::AbstractTensorMap; alg = nothing)
+
+Return the Grassmann tangent Z and unitary Y such that `retract(Wold, Z, 1) * Y ≈ Wnew`.
+
+This is done by solving the equation `Wold * V * cos(S) * V' + U * sin(S) * V' = Wnew * Y`
+for the isometries V, U, and Y, and the diagonal matrix S, and returning Z, Y, where
+`Z = U * S * V'`.
+"""
+function invretract(Wold::AbstractTensorMap, Wnew::AbstractTensorMap; alg = nothing)
+    space(Wold) == space(Wnew) || throw(SectorMismatch())
+    WodWn = Wold' * Wnew
+    res = Wnew - Wold * WodWn
+    V, cS, Xd = tsvd!(WodWn)
+    Scmplx = acos(cS)
+    # acos always returns a complex TensorMap. We cast back to real if possible.
+    S = eltype(WodWn) <: Real ? real(Scmplx) : Scmplx
+    u, s, vd = tsvd!(res * Xd' * sin(S))
+    Z = Grassmann.GrassmannTangent(Wold, u * vd * S * V')
+    Y = V * Xd
+    return Z, Y
+end
+
+"""
+    matchgauge(W::AbstractTensorMap, V::AbstractTensorMap)
+
+Return the unitary Y such that V*Y and W are "in the same Grassmann gauge", in the sense
+that they can be connected by a Grassmann retraction.
+"""
+function matchgauge(W::AbstractTensorMap, V::AbstractTensorMap)
+    space(W) == space(V) || throw(SectorMismatch())
+    WdV = W' * V
+    u, s, v = tsvd!(WdV)
+    return v' * u'
+end
+
 function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′;
                     alg = nothing)
     W == checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
