@@ -40,6 +40,8 @@ Base.:*(α::Real, Δ::StiefelTangent) = lmul!(α, copy(Δ))
 Base.:/(Δ::StiefelTangent, α::Real) = rmul!(copy(Δ), inv(α))
 Base.:\(α::Real, Δ::StiefelTangent) = lmul!(inv(α), copy(Δ))
 
+Base.zero(Δ::StiefelTangent) = StiefelTangent(Δ.W, zero(Δ.A), zero(Δ.Z))
+
 function TensorKit.rmul!(Δ::StiefelTangent, α::Real)
     rmul!(Δ.A, α)
     rmul!(Δ.Z, α)

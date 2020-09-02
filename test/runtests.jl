@@ -17,6 +17,7 @@ const α = 0.75
         @test norm(W'*Δ[]) <= sqrt(eps(real(T)))*dim(domain(W))
         @test norm(W'*Θ[]) <= sqrt(eps(real(T)))*dim(domain(W))
         @test norm(W'*Ξ[]) <= sqrt(eps(real(T)))*dim(domain(W))
+        @test norm(zero(W)) == 0
         @test (@inferred Grassmann.inner(W, Δ, Θ)) ≈ real(dot(Δ[], Θ[]))
         @test Grassmann.inner(W, Δ, Θ) ≈ real(dot(X, Θ[]))
         @test Grassmann.inner(W, Δ, Θ) ≈ real(dot(Δ[],Y))
@@ -53,6 +54,7 @@ end
         @test norm(W'*Δ[] + Δ[]'*W) <= sqrt(eps(real(T)))*dim(domain(W))
         @test norm(W'*Θ[] + Θ[]'*W) <= sqrt(eps(real(T)))*dim(domain(W))
         @test norm(W'*Ξ[] + Ξ[]'*W) <= sqrt(eps(real(T)))*dim(domain(W))
+        @test norm(zero(W)) == 0
         @test (@inferred Stiefel.inner_euclidean(W, Δ, Θ)) ≈ real(dot(Δ[], Θ[]))
         @test (@inferred Stiefel.inner_canonical(W, Δ, Θ)) ≈
                                                         real(dot(Δ[], Θ[] - W*(W'*Θ[])/2))
@@ -116,6 +118,7 @@ end
         @test norm(W'*Δ[] + Δ[]'*W) <= sqrt(eps(real(T)))*dim(domain(W))
         @test norm(W'*Θ[] + Θ[]'*W) <= sqrt(eps(real(T)))*dim(domain(W))
         @test norm(W'*Ξ[] + Ξ[]'*W) <= sqrt(eps(real(T)))*dim(domain(W))
+        @test norm(zero(W)) == 0
         @test (@inferred Unitary.inner(W, Δ, Θ)) ≈ real(dot(Δ[], Θ[]))
         @test Unitary.inner(W, Δ, Θ) ≈ real(dot(X, Θ[]))
         @test Unitary.inner(W, Δ, Θ) ≈ real(dot(Δ[],Y))

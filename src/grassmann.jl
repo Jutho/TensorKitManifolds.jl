@@ -94,6 +94,8 @@ Base.:*(α::Number, Δ::GrassmannTangent) = lmul!(α, copy(Δ))
 Base.:/(Δ::GrassmannTangent, α::Number) = rmul!(copy(Δ), inv(α))
 Base.:\(α::Number, Δ::GrassmannTangent) = lmul!(inv(α), copy(Δ))
 
+Base.zero(Δ::GrassmannTangent) = GrassmannTangent(Δ.W, zero(Δ.Z))
+
 function TensorKit.rmul!(Δ::GrassmannTangent, α::Number)
     rmul!(Δ.Z, α)
     if Base.getfield(Δ, :S) !== nothing
