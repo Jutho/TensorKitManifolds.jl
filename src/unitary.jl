@@ -47,6 +47,8 @@ Base.:*(α::Real, Δ::UnitaryTangent) = lmul!(α, copy(Δ))
 Base.:/(Δ::UnitaryTangent, α::Real) = rmul!(copy(Δ), inv(α))
 Base.:\(α::Real, Δ::UnitaryTangent) = lmul!(inv(α), copy(Δ))
 
+Base.zero(Δ::UnitaryTangent) = UnitaryTangent(Δ.W, zero(Δ.A))
+
 function TensorKit.rmul!(Δ::UnitaryTangent, α::Real)
     rmul!(Δ.A, α)
     return Δ

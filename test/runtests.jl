@@ -17,6 +17,7 @@ const α = 0.75
         @test norm(W'*Δ[]) <= sqrt(eps(real(T)))*dim(domain(W))
         @test norm(W'*Θ[]) <= sqrt(eps(real(T)))*dim(domain(W))
         @test norm(W'*Ξ[]) <= sqrt(eps(real(T)))*dim(domain(W))
+        @test norm(zero(W)) == 0
         @test (@inferred Grassmann.inner(W, Δ, Θ)) ≈ real(dot(Δ[], Θ[]))
         @test Grassmann.inner(W, Δ, Θ) ≈ real(dot(X, Θ[]))
         @test Grassmann.inner(W, Δ, Θ) ≈ real(dot(Δ[],Y))
@@ -38,6 +39,13 @@ const α = 0.75
         @test Ξ2[] ≈ -Δ2[] + γ * Θ2[]
         @test Grassmann.inner(W2, Δ2, Θ2) ≈ Grassmann.inner(W, Δ, Θ)
         @test Grassmann.inner(W2, Ξ2, Θ2) ≈ Grassmann.inner(W, Ξ, Θ)
+
+        Wend = TensorMap(randhaar, T, codomain(W), domain(W))
+        Δ3, V = Grassmann.invretract(W, Wend)
+        @test Wend ≈ retract(W, Δ3, 1)[1] * V
+        U = Grassmann.matchgauge(W, Wend)
+        V2 = Grassmann.invretract(W, Wend * U)[2]
+        @test V2 ≈ one(V2)
     end
 end
 
@@ -53,6 +61,7 @@ end
         @test norm(W'*Δ[] + Δ[]'*W) <= sqrt(eps(real(T)))*dim(domain(W))
         @test norm(W'*Θ[] + Θ[]'*W) <= sqrt(eps(real(T)))*dim(domain(W))
         @test norm(W'*Ξ[] + Ξ[]'*W) <= sqrt(eps(real(T)))*dim(domain(W))
+        @test norm(zero(W)) == 0
         @test (@inferred Stiefel.inner_euclidean(W, Δ, Θ)) ≈ real(dot(Δ[], Θ[]))
         @test (@inferred Stiefel.inner_canonical(W, Δ, Θ)) ≈
                                                         real(dot(Δ[], Θ[] - W*(W'*Θ[])/2))
@@ -116,6 +125,7 @@ end
         @test norm(W'*Δ[] + Δ[]'*W) <= sqrt(eps(real(T)))*dim(domain(W))
         @test norm(W'*Θ[] + Θ[]'*W) <= sqrt(eps(real(T)))*dim(domain(W))
         @test norm(W'*Ξ[] + Ξ[]'*W) <= sqrt(eps(real(T)))*dim(domain(W))
+        @test norm(zero(W)) == 0
         @test (@inferred Unitary.inner(W, Δ, Θ)) ≈ real(dot(Δ[], Θ[]))
         @test Unitary.inner(W, Δ, Θ) ≈ real(dot(X, Θ[]))
         @test Unitary.inner(W, Δ, Θ) ≈ real(dot(Δ[],Y))

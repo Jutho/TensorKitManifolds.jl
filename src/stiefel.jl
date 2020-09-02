@@ -10,7 +10,7 @@ using ..TensorKitManifolds: projecthermitian!, projectantihermitian!,
                             projectisometric!, projectcomplement!, PolarNewton,
                             _stiefelexp, _stiefellog, eleps
 import ..TensorKitManifolds: base, checkbase,
-                                inner, retract, invretract, transport, transport!
+                                inner, retract, transport, transport!
 
 # special type to store tangent vectors using A and Z = Q*R,
 mutable struct StiefelTangent{T<:AbstractTensorMap, TA<:AbstractTensorMap}
@@ -39,6 +39,8 @@ Base.:*(Δ::StiefelTangent, α::Real) = rmul!(copy(Δ), α)
 Base.:*(α::Real, Δ::StiefelTangent) = lmul!(α, copy(Δ))
 Base.:/(Δ::StiefelTangent, α::Real) = rmul!(copy(Δ), inv(α))
 Base.:\(α::Real, Δ::StiefelTangent) = lmul!(inv(α), copy(Δ))
+
+Base.zero(Δ::StiefelTangent) = StiefelTangent(Δ.W, zero(Δ.A), zero(Δ.Z))
 
 function TensorKit.rmul!(Δ::StiefelTangent, α::Real)
     rmul!(Δ.A, α)
