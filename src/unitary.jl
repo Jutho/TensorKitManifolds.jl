@@ -8,7 +8,7 @@ import TensorKit: similarstoragetype, SectorDict
 using ..TensorKitManifolds: projectantihermitian!, projectisometric!, PolarNewton
 import ..TensorKitManifolds: base, checkbase, inner, retract, transport, transport!
 
-mutable struct UnitaryTangent{T<:AbstractTensorMap, TA<:AbstractTensorMap}
+struct UnitaryTangent{T<:AbstractTensorMap, TA<:AbstractTensorMap}
     W::T
     A::TA
     function UnitaryTangent(W::AbstractTensorMap{S,N₁,N₂},
@@ -23,17 +23,6 @@ Base.getindex(Δ::UnitaryTangent) = Δ.W * Δ.A
 base(Δ::UnitaryTangent) = Δ.W
 checkbase(Δ₁::UnitaryTangent, Δ₂::UnitaryTangent) = Δ₁.W == Δ₂.W ? Δ₁.W :
     throw(ArgumentError("tangent vectors with different base points"))
-
-function Base.getproperty(Δ::UnitaryTangent, sym::Symbol)
-    if sym ∈ (:W, :A)
-        return Base.getfield(Δ, sym)
-    else
-        error("type UnitaryTangent has no field $sym")
-    end
-end
-function Base.setproperty!(Δ::UnitaryTangent, sym::Symbol, v)
-    error("type UnitaryTangent does not allow to change its fields")
-end
 
 # Basic vector space behaviour
 Base.:+(Δ₁::UnitaryTangent, Δ₂::UnitaryTangent) =
@@ -92,7 +81,7 @@ project(X, W; metric = :euclidean) = project!(copy(X), W; metric = :euclidean)
 function retract(W::AbstractTensorMap, Δ::UnitaryTangent, α; alg = nothing)
     W == base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
     E = exp(α*Δ.A)
-    W′ = projectisometric!(W*E; alg = PolarNewton())
+    W′ = projectisometric!(W*E; alg = SDD())
     A′ = Δ.A
     return W′, UnitaryTangent(W′, A′)
 end

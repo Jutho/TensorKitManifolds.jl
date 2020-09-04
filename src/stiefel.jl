@@ -13,7 +13,7 @@ import ..TensorKitManifolds: base, checkbase,
                                 inner, retract, transport, transport!
 
 # special type to store tangent vectors using A and Z = Q*R,
-mutable struct StiefelTangent{T<:AbstractTensorMap, TA<:AbstractTensorMap}
+struct StiefelTangent{T<:AbstractTensorMap, TA<:AbstractTensorMap}
     W::T
     A::TA
     Z::T

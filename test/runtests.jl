@@ -43,7 +43,7 @@ const α = 0.75
         Wend = TensorMap(randhaar, T, codomain(W), domain(W))
         Δ3, V = Grassmann.invretract(W, Wend)
         @test Wend ≈ retract(W, Δ3, 1)[1] * V
-        U = Grassmann.matchgauge(W, Wend)
+        U = Grassmann.relativegauge(W, Wend)
         V2 = Grassmann.invretract(W, Wend * U)[2]
         @test V2 ≈ one(V2)
     end
@@ -51,7 +51,7 @@ end
 
 @testset "Stiefel with space $V" for V in spaces
     for T in (Float64, ComplexF64)
-        W, = leftorth(TensorMap(randn, T, V*V*V, V*V); alg = Polar())
+        W = TensorMap(randhaar, T, V*V*V, V*V)
         X = TensorMap(randn, T, space(W))
         Y = TensorMap(randn, T, space(W))
         Δ = @inferred Stiefel.project_euclidean(X, W)
@@ -110,6 +110,10 @@ end
         @test Stiefel.inner_euclidean(W2, Ξ2, Θ2) ≈ Stiefel.inner_euclidean(W, Ξ, Θ)
         @test Stiefel.inner_canonical(W2, Δ2, Θ2) ≈ Stiefel.inner_canonical(W, Δ, Θ)
         @test Stiefel.inner_canonical(W2, Ξ2, Θ2) ≈ Stiefel.inner_canonical(W, Ξ, Θ)
+
+        W3 = projectisometric!(W + 1e-1 * TensorMap(rand, T, codomain(W), domain(W)))
+        Δ3 = Stiefel.invretract(W, W3)
+        @test W3 ≈ retract(W, Δ3, 1)[1]
     end
 end
 
