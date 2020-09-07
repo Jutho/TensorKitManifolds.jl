@@ -217,9 +217,12 @@ end
 # not parallel transport for either metric as the corresponding connection has torsion
 # can be computed efficiently: O(np^2) + O(p^3)
 function transport_exp!(Θ::StiefelTangent, W::AbstractTensorMap,
-                        Δ::StiefelTangent, α::Real, W′)
+                        Δ::StiefelTangent, α::Real, W′::AbstractTensorMap)
     W == checkbase(Δ,Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
-    W′, Q, Q′, R′ = stiefelexp(W, Δ.A, Δ.Z, α)
+    # TODO: stiefelexp call does not depend on Θ
+    # cache result or find some other way not to recompute this information
+    _W′, Q, Q′, R′ = stiefelexp(W, Δ.A, Δ.Z, α)
+    W′ ≈ _W′ || throw(ArgumentError("not a valid tangetn vector at end point"))
     A = Θ.A
     Z = Θ.Z
     QZ = Q'*Θ.Z
