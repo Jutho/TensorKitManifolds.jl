@@ -222,7 +222,7 @@ function transport_exp!(Θ::StiefelTangent, W::AbstractTensorMap,
     # TODO: stiefelexp call does not depend on Θ
     # cache result or find some other way not to recompute this information
     _W′, Q, Q′, R′ = stiefelexp(W, Δ.A, Δ.Z, α)
-    W′ ≈ _W′ || throw(ArgumentError("not a valid tangetn vector at end point"))
+    W′ ≈ _W′ || throw(ArgumentError("not a valid tangent vector at end point"))
     A = Θ.A
     Z = Θ.Z
     QZ = Q'*Θ.Z
