@@ -28,23 +28,24 @@ checkbase(x, y, z, args...) = checkbase(checkbase(x, y), z, args...)
 # the machine epsilon for the elements of an object X, name inspired from eltype
 eleps(X) = eps(real(eltype(X)))
 
-function isisometry(W::AbstractTensorMap; tol = 10*eleps(W))
-    WdW = W'*W
+function isisometry(W::AbstractTensorMap; tol=10 * eleps(W))
+    WdW = W' * W
     s = zero(float(real(eltype(W))))
-    for (c,b) in blocks(WdW)
+    for (c, b) in blocks(WdW)
         _subtractone!(b)
-        s += dim(c)*length(b)
+        s += dim(c) * length(b)
     end
-    return norm(WdW) <= tol*sqrt(s)
+    return norm(WdW) <= tol * sqrt(s)
 end
 
-isunitary(W::AbstractTensorMap; tol = 10*eleps(W)) =
-    isisometry(W; tol = tol) && isisometry(W'; tol = tol)
+function isunitary(W::AbstractTensorMap; tol=10 * eleps(W))
+    return isisometry(W; tol=tol) && isisometry(W'; tol=tol)
+end
 
 function projecthermitian!(W::AbstractTensorMap)
     codomain(W) == domain(W) ||
         throw(DomainError("Tensor with distinct domain and codomain cannot be hermitian."))
-    for (c,b) in blocks(W)
+    for (c, b) in blocks(W)
         _projecthermitian!(b)
     end
     return W
@@ -52,7 +53,7 @@ end
 function projectantihermitian!(W::AbstractTensorMap)
     codomain(W) == domain(W) ||
         throw(DomainError("Tensor with distinct domain and codomain cannot be anithermitian."))
-    for (c,b) in blocks(W)
+    for (c, b) in blocks(W)
         _projectantihermitian!(b)
     end
     return W
@@ -60,18 +61,18 @@ end
 
 struct PolarNewton <: TensorKit.OrthogonalFactorizationAlgorithm
 end
-function projectisometric!(W::AbstractTensorMap; alg = Polar())
+function projectisometric!(W::AbstractTensorMap; alg=Polar())
     if alg isa TensorKit.Polar || alg isa TensorKit.SDD
-        foreach(blocks(W)) do (c,b)
-            _polarsdd!(b)
+        foreach(blocks(W)) do (c, b)
+            return _polarsdd!(b)
         end
     elseif alg isa TensorKit.SVD
-        foreach(blocks(W)) do (c,b)
-            _polarsvd!(b)
+        foreach(blocks(W)) do (c, b)
+            return _polarsvd!(b)
         end
     elseif alg isa PolarNewton
-        foreach(blocks(W)) do (c,b)
-            _polarnewton!(b)
+        foreach(blocks(W)) do (c, b)
+            return _polarnewton!(b)
         end
     else
         throw(ArgumentError("unkown algorithm for projectisometric!: alg = $alg"))
@@ -80,14 +81,14 @@ function projectisometric!(W::AbstractTensorMap; alg = Polar())
 end
 
 function projectcomplement!(X::AbstractTensorMap, W::AbstractTensorMap;
-                            tol = 10*eleps(X))
-    P = W'*X
+                            tol=10 * eleps(X))
+    P = W' * X
     nP = norm(P)
     nX = norm(X)
     dP = dim(P)
-    while nP > tol*max(dP, nX)
+    while nP > tol * max(dP, nX)
         X = mul!(X, W, P, -1, 1)
-        P = W'*X
+        P = W' * X
         nP = norm(P)
     end
     return X
@@ -97,11 +98,11 @@ projecthermitian(W::AbstractTensorMap) = projecthermitian!(copy(W))
 projectantihermitian(W::AbstractTensorMap) = projectantihermitian!(copy(W))
 
 function projectisometric(W::AbstractTensorMap;
-                          alg::TensorKit.OrthogonalFactorizationAlgorithm = Polar())
+                          alg::TensorKit.OrthogonalFactorizationAlgorithm=Polar())
     return projectisometric!(copy(W); alg=alg)
 end
 function projectcomplement(X::AbstractTensorMap, W::AbstractTensorMap,
-                           tol = 10*eleps(X))
+                           tol=10 * eleps(X))
     return projectcomplement!(copy(X), W; tol=tol)
 end
 
