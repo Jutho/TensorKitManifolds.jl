@@ -24,7 +24,7 @@ mutable struct GrassmannTangent{T<:AbstractTensorMap,
     function GrassmannTangent(W::AbstractTensorMap{S,N₁,N₂},
                               Z::AbstractTensorMap{S,N₁,N₂}) where {S,N₁,N₂}
         T = typeof(W)
-        TT = promote_type(float(eltype(W)), eltype(Z))
+        TT = promote_type(float(scalartype(W)), scalartype(Z))
         G = sectortype(W)
         M = similarstoragetype(W, TT)
         Mr = similarstoragetype(W, real(TT))
@@ -198,7 +198,7 @@ function invretract(Wold::AbstractTensorMap, Wnew::AbstractTensorMap; alg=nothin
     Vd, cS, VY = tsvd!(WodWn)
     Scmplx = acos(cS)
     # acos always returns a complex TensorMap. We cast back to real if possible.
-    S = eltype(WodWn) <: Real && isreal(sectortype(Scmplx)) ? real(Scmplx) : Scmplx
+    S = scalartype(WodWn) <: Real && isreal(sectortype(Scmplx)) ? real(Scmplx) : Scmplx
     UsS = Wneworth * VY' # U * sin(S) # should be in polar decomposition form
     U = projectisometric!(UsS; alg=Polar())
     Y = Vd * VY

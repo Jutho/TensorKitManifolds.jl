@@ -26,11 +26,11 @@ function checkbase end
 checkbase(x, y, z, args...) = checkbase(checkbase(x, y), z, args...)
 
 # the machine epsilon for the elements of an object X, name inspired from eltype
-eleps(X) = eps(real(eltype(X)))
+eleps(X) = eps(real(scalartype(X)))
 
 function isisometry(W::AbstractTensorMap; tol=10 * eleps(W))
     WdW = W' * W
-    s = zero(float(real(eltype(W))))
+    s = zero(float(real(scalartype(W))))
     for (c, b) in blocks(WdW)
         _subtractone!(b)
         s += dim(c) * length(b)
