@@ -26,9 +26,9 @@ function checkbase end
 checkbase(x, y, z, args...) = checkbase(checkbase(x, y), z, args...)
 
 # the machine epsilon for the elements of an object X, name inspired from eltype
-eleps(X) = eps(real(scalartype(X)))
+scalareps(X) = eps(real(scalartype(X)))
 
-function isisometry(W::AbstractTensorMap; tol=10 * eleps(W))
+function isisometry(W::AbstractTensorMap; tol=10 * scalareps(W))
     WdW = W' * W
     s = zero(float(real(scalartype(W))))
     for (c, b) in blocks(WdW)
@@ -38,7 +38,7 @@ function isisometry(W::AbstractTensorMap; tol=10 * eleps(W))
     return norm(WdW) <= tol * sqrt(s)
 end
 
-function isunitary(W::AbstractTensorMap; tol=10 * eleps(W))
+function isunitary(W::AbstractTensorMap; tol=10 * scalareps(W))
     return isisometry(W; tol=tol) && isisometry(W'; tol=tol)
 end
 
@@ -81,7 +81,7 @@ function projectisometric!(W::AbstractTensorMap; alg=Polar())
 end
 
 function projectcomplement!(X::AbstractTensorMap, W::AbstractTensorMap;
-                            tol=10 * eleps(X))
+                            tol=10 * scalareps(X))
     P = W' * X
     nP = norm(P)
     nX = norm(X)
@@ -102,7 +102,7 @@ function projectisometric(W::AbstractTensorMap;
     return projectisometric!(copy(W); alg=alg)
 end
 function projectcomplement(X::AbstractTensorMap, W::AbstractTensorMap,
-                           tol=10 * eleps(X))
+                           tol=10 * scalareps(X))
     return projectcomplement!(copy(X), W; tol=tol)
 end
 

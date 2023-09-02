@@ -88,7 +88,7 @@ function _polarsvd!(A::StridedMatrix)
     U, S, V = svd!(A; alg=LinearAlgebra.QRIteration())
     return mul!(A, U, V')
 end
-function _polarnewton!(A::StridedMatrix; tol=10 * eleps(A), maxiter=5)
+function _polarnewton!(A::StridedMatrix; tol=10 * scalareps(A), maxiter=5)
     m, n = size(A)
     @assert m >= n
     A2 = copy(A)
@@ -157,7 +157,7 @@ function _stiefelexp(W::StridedMatrix, A::StridedMatrix, Z::StridedMatrix, α)
 end
 
 function _stiefellog(Wold::StridedMatrix, Wnew::StridedMatrix;
-                     tol=10 * eleps(Wold), maxiter=100)
+                     tol=10 * scalareps(Wold), maxiter=100)
     n, p = size(Wold)
     r = min(2 * p, n)
     P = Wold' * Wnew

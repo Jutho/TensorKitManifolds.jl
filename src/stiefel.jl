@@ -8,7 +8,7 @@ using TensorKit
 using TensorKit: similarstoragetype, SectorDict
 using ..TensorKitManifolds: projecthermitian!, projectantihermitian!,
                             projectisometric!, projectcomplement!, PolarNewton,
-                            _stiefelexp, _stiefellog, eleps
+                            _stiefelexp, _stiefellog, scalareps
 import ..TensorKitManifolds: base, checkbase,
                              inner, retract, transport, transport!
 
@@ -199,7 +199,7 @@ function retract_exp(W::AbstractTensorMap, Δ::StiefelTangent, α::Real)
     return W′, StiefelTangent(W′, A′, Z′)
 end
 function invretract_exp(Wold::AbstractTensorMap, Wnew::AbstractTensorMap;
-                        tol=eleps(Wold)^(2 / 3))
+                        tol=scalareps(Wold)^(2 / 3))
     space(Wold) == space(Wnew) || throw(SectorMismatch())
 
     S = spacetype(Wold)
