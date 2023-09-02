@@ -70,16 +70,6 @@ function _subtractone!(a::AbstractMatrix)
     view(a, diagind(a)) .= view(a, diagind(a)) .- 1
     return a
 end
-function _one!(A::AbstractMatrix)
-    m, n = size(A)
-    @inbounds for j in 1:n
-        for i in 1:m
-            A[i, j] = i == j
-        end
-    end
-    return A
-end
-
 function _polarsdd!(A::StridedMatrix)
     U, S, V = svd!(A; alg=LinearAlgebra.DivideAndConquer())
     return mul!(A, U, V')
@@ -93,7 +83,7 @@ function _polarnewton!(A::StridedMatrix; tol=10 * scalareps(A), maxiter=5)
     @assert m >= n
     A2 = copy(A)
     Q, R = qr!(A2)
-    Ri = ldiv!(UpperTriangular(R)', _one!(similar(R)))
+    Ri = ldiv!(UpperTriangular(R)', TensorKit._one!(similar(R)))
     R, Ri = _avgdiff!(R, Ri)
     i = 1
     R2 = view(A, 1:n, 1:n)
@@ -104,7 +94,7 @@ function _polarnewton!(A::StridedMatrix; tol=10 * scalareps(A), maxiter=5)
             _polarsdd!(Ri)
             break
         end
-        Ri = ldiv!(lu!(R2)', _one!(Ri))
+        Ri = ldiv!(lu!(R2)', TensorKit._one!(Ri))
         R, Ri = _avgdiff!(R, Ri)
         copyto!(R2, R)
         i += 1
@@ -173,7 +163,7 @@ function _stiefellog(Wold::StridedMatrix, Wnew::StridedMatrix;
     R = Q' * dW
     Wext = [Wold Q]
     F = qr!([P; R])
-    U = lmul!(F.Q, _one!(similar(P, r, r)))
+    U = lmul!(F.Q, TensorKit._one!(similar(P, r, r)))
     U[1:p, 1:p] .= P
     U[(p + 1):r, 1:p] .= R
     X = view(U, 1:p, (p + 1):r)
