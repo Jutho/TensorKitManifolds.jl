@@ -7,6 +7,7 @@ export Grassmann, Stiefel, Unitary
 export inner, retract, transport, transport!
 
 using TensorKit
+using TensorKit: SVD
 
 # Every submodule -- Grassmann, Stiefel, and Unitary -- implements their own methods for
 # these. The signatures should be
@@ -61,7 +62,7 @@ end
 
 struct PolarNewton <: TensorKit.OrthogonalFactorizationAlgorithm
 end
-function projectisometric!(W::AbstractTensorMap; alg=Polar())
+function projectisometric!(W::AbstractTensorMap; alg=TensorKit.SVD())
     if alg isa TensorKit.Polar || alg isa TensorKit.SDD
         foreach(blocks(W)) do (c, b)
             return _polarsdd!(b)
