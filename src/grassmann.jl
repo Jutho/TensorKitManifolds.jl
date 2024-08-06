@@ -56,7 +56,7 @@ function Base.getproperty(Δ::GrassmannTangent, sym::Symbol)
     elseif sym ∈ (:U, :S, :V)
         v = Base.getfield(Δ, sym)
         v !== nothing && return v
-        U, S, V, = tsvd(Δ.Z)
+        U, S, V, = tsvd(Δ.Z, alg = SVD())
         Base.setfield!(Δ, :U, U)
         Base.setfield!(Δ, :S, S)
         Base.setfield!(Δ, :V, V)
