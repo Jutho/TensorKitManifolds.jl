@@ -50,13 +50,13 @@ function checkbase(Δ₁::GrassmannTangent, Δ₂::GrassmannTangent)
            throw(ArgumentError("tangent vectors with different base points"))
 end
 
-function Base.getproperty(Δ::GrassmannTangent, sym::Symbol)
+function Base.getproperty(Δ::GrassmannTangent, sym::Symbol; alg = SDD())
     if sym ∈ (:W, :Z)
         return Base.getfield(Δ, sym)
     elseif sym ∈ (:U, :S, :V)
         v = Base.getfield(Δ, sym)
         v !== nothing && return v
-        U, S, V, = tsvd(Δ.Z, alg = SVD())
+        U, S, V, = tsvd(Δ.Z, alg = alg)
         Base.setfield!(Δ, :U, U)
         Base.setfield!(Δ, :S, S)
         Base.setfield!(Δ, :V, V)
@@ -169,12 +169,12 @@ while the local tangent vector along the retraction curve is
 
 `Z′ = - W * V' * sin(α*S) * S * V + U * cos(α * S) * S * V'`.
 """
-function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α; alg=nothing)
+function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α; alg=Polar())
     W == base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W * V'
     sSV, cSV = _sincosSV(α, S, V) # sin(S)*V, cos(S)*V
-    W′ = projectisometric!(WVd * cSV + U * sSV)
+    W′ = projectisometric!(WVd * cSV + U * sSV; alg = alg)
     sSSV = _lmul!(S, sSV) # sin(S)*S*V
     cSSV = _lmul!(S, cSV) # cos(S)*S*V
     Z′ = projectcomplement!(-WVd * sSSV + U * cSSV, W′)
@@ -190,7 +190,7 @@ This is done by solving the equation `Wold * V' * cos(S) * V + U * sin(S) * V = 
 for the isometries `U`, `V`, and `Y`, and the diagonal matrix `S`, and returning
 `Z = U * S * V` and `Y`.
 """
-function invretract(Wold::AbstractTensorMap, Wnew::AbstractTensorMap; alg=nothing)
+function invretract(Wold::AbstractTensorMap, Wnew::AbstractTensorMap; alg=Polar()#=I took Polar as the default, this is what Jutho did in the rest of TensorKitManifolds=#) 
     space(Wold) == space(Wnew) || throw(SectorMismatch())
     WodWn = Wold' * Wnew # V' * cos(S) * V * Y
     Wneworth = Wnew - Wold * WodWn
@@ -199,7 +199,7 @@ function invretract(Wold::AbstractTensorMap, Wnew::AbstractTensorMap; alg=nothin
     # acos always returns a complex TensorMap. We cast back to real if possible.
     S = scalartype(WodWn) <: Real && isreal(sectortype(Scmplx)) ? real(Scmplx) : Scmplx
     UsS = Wneworth * VY' # U * sin(S) # should be in polar decomposition form
-    U = projectisometric!(UsS; alg=Polar())
+    U = projectisometric!(UsS; alg=alg)
     Y = Vd * VY
     V = Vd'
     Z = Grassmann.GrassmannTangent(Wold, U * S * V)
@@ -219,7 +219,7 @@ function relativegauge(W::AbstractTensorMap, V::AbstractTensorMap)
 end
 
 function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′;
-                    alg=nothing)
+                    alg=Polar())   #I don't see the alg appearing as optional argument for any of the subroutines of this function. Is it truly needed ? Just to be sure I'll keep it here :)
     W == checkbase(Δ, Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W * V'
@@ -231,7 +231,7 @@ function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTan
     return GrassmannTangent(W′, Z′)
 end
 function transport(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′;
-                   alg=nothing)
+                   alg=Polar()) #same comment as above
     return transport!(copy(Θ), W, Δ, α, W′; alg=alg)
 end
 
