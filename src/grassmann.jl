@@ -50,13 +50,13 @@ function checkbase(Δ₁::GrassmannTangent, Δ₂::GrassmannTangent)
            throw(ArgumentError("tangent vectors with different base points"))
 end
 
-function Base.getproperty(Δ::GrassmannTangent, sym::Symbol; alg = SDD())
+function Base.getproperty(Δ::GrassmannTangent, sym::Symbol; alg=SDD())
     if sym ∈ (:W, :Z)
         return Base.getfield(Δ, sym)
     elseif sym ∈ (:U, :S, :V)
         v = Base.getfield(Δ, sym)
         v !== nothing && return v
-        U, S, V, = tsvd(Δ.Z, alg = alg)
+        U, S, V, = tsvd(Δ.Z; alg=alg)
         Base.setfield!(Δ, :U, U)
         Base.setfield!(Δ, :S, S)
         Base.setfield!(Δ, :V, V)
@@ -174,7 +174,7 @@ function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α; alg=SDD())
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W * V'
     sSV, cSV = _sincosSV(α, S, V) # sin(S)*V, cos(S)*V
-    W′ = projectisometric!(WVd * cSV + U * sSV; alg = alg)
+    W′ = projectisometric!(WVd * cSV + U * sSV; alg=alg)
     sSSV = _lmul!(S, sSV) # sin(S)*S*V
     cSSV = _lmul!(S, cSV) # cos(S)*S*V
     Z′ = projectcomplement!(-WVd * sSSV + U * cSSV, W′)
@@ -190,7 +190,7 @@ This is done by solving the equation `Wold * V' * cos(S) * V + U * sin(S) * V = 
 for the isometries `U`, `V`, and `Y`, and the diagonal matrix `S`, and returning
 `Z = U * S * V` and `Y`.
 """
-function invretract(Wold::AbstractTensorMap, Wnew::AbstractTensorMap; alg=SDD()) 
+function invretract(Wold::AbstractTensorMap, Wnew::AbstractTensorMap; alg=SDD())
     space(Wold) == space(Wnew) || throw(SectorMismatch())
     WodWn = Wold' * Wnew # V' * cos(S) * V * Y
     Wneworth = Wnew - Wold * WodWn
@@ -219,7 +219,7 @@ function relativegauge(W::AbstractTensorMap, V::AbstractTensorMap)
 end
 
 function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′;
-                    alg=nothing)   
+                    alg=nothing)
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W * V'
     UdΘ = U' * Θ.Z
@@ -230,7 +230,7 @@ function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTan
     return GrassmannTangent(W′, Z′)
 end
 function transport(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′;
-                   alg=nothing) 
+                   alg=nothing)
     return transport!(copy(Θ), W, Δ, α, W′; alg=alg)
 end
 
