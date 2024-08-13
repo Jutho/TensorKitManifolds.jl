@@ -10,6 +10,10 @@ using ..TensorKitManifolds: projecthermitian!, projectantihermitian!,
                             projectisometric!, projectcomplement!, PolarNewton
 import ..TensorKitManifolds: base, checkbase, inner, retract, transport, transport!
 
+# Default algorithm used in all of the SVD-based methods
+# Picking SVD instead of SDD here, as it seems SDD has stability issues for tensors that are already close to isometry.
+const DEFAULT_SVD_ALG = SVD()
+
 # special type to store tangent vectors using Z
 # add SVD of Z = U*S*V upon first creation
 mutable struct GrassmannTangent{T<:AbstractTensorMap,
@@ -50,13 +54,13 @@ function checkbase(Δ₁::GrassmannTangent, Δ₂::GrassmannTangent)
            throw(ArgumentError("tangent vectors with different base points"))
 end
 
-function Base.getproperty(Δ::GrassmannTangent, sym::Symbol; alg=SDD())
+function Base.getproperty(Δ::GrassmannTangent, sym::Symbol)
     if sym ∈ (:W, :Z)
         return Base.getfield(Δ, sym)
     elseif sym ∈ (:U, :S, :V)
         v = Base.getfield(Δ, sym)
         v !== nothing && return v
-        U, S, V, = tsvd(Δ.Z; alg=alg)
+        U, S, V, = tsvd(Δ.Z; alg=DEFAULT_SVD_ALG)
         Base.setfield!(Δ, :U, U)
         Base.setfield!(Δ, :S, S)
         Base.setfield!(Δ, :V, V)
@@ -169,7 +173,7 @@ while the local tangent vector along the retraction curve is
 
 `Z′ = - W * V' * sin(α*S) * S * V + U * cos(α * S) * S * V'`.
 """
-function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α; alg=Polar())
+function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α; alg=DEFAULT_SVD_ALG)
     W == base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W * V'
@@ -190,8 +194,8 @@ This is done by solving the equation `Wold * V' * cos(S) * V + U * sin(S) * V = 
 for the isometries `U`, `V`, and `Y`, and the diagonal matrix `S`, and returning
 `Z = U * S * V` and `Y`.
 """
-function invretract(Wold::AbstractTensorMap, Wnew::AbstractTensorMap; alg=Polar())
-    space(Wold) == space(Wnew) || throw(SectorMismatch())
+function invretract(Wold::AbstractTensorMap, Wnew::AbstractTensorMap; alg=DEFAULT_SVD_ALG)
+    space(Wold) == space(Wnew) || throw(SpaceMismatch())
     WodWn = Wold' * Wnew # V' * cos(S) * V * Y
     Wneworth = Wnew - Wold * WodWn
     Vd, cS, VY = tsvd!(WodWn)
@@ -213,9 +217,9 @@ Return the unitary Y such that V*Y and W are "in the same Grassmann gauge" (tech
 from fibre bundles: in the same section), such that they can be related by a Grassmann
 retraction.
 """
-function relativegauge(W::AbstractTensorMap, V::AbstractTensorMap)
-    space(W) == space(V) || throw(SectorMismatch())
-    return projectisometric!(V' * W; alg=Polar())
+function relativegauge(W::AbstractTensorMap, V::AbstractTensorMap; alg=DEFAULT_SVD_ALG)
+    space(W) == space(V) || throw(SpaceMismatch())
+    return projectisometric!(V' * W; alg=alg)
 end
 
 function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′;
