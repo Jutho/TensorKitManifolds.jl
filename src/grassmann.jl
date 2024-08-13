@@ -169,7 +169,7 @@ while the local tangent vector along the retraction curve is
 
 `Z′ = - W * V' * sin(α*S) * S * V + U * cos(α * S) * S * V'`.
 """
-function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α; alg=SDD())
+function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α; alg=Polar())
     W == base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W * V'
@@ -190,7 +190,7 @@ This is done by solving the equation `Wold * V' * cos(S) * V + U * sin(S) * V = 
 for the isometries `U`, `V`, and `Y`, and the diagonal matrix `S`, and returning
 `Z = U * S * V` and `Y`.
 """
-function invretract(Wold::AbstractTensorMap, Wnew::AbstractTensorMap; alg=SDD())
+function invretract(Wold::AbstractTensorMap, Wnew::AbstractTensorMap; alg=Polar())
     space(Wold) == space(Wnew) || throw(SectorMismatch())
     WodWn = Wold' * Wnew # V' * cos(S) * V * Y
     Wneworth = Wnew - Wold * WodWn
