@@ -220,6 +220,7 @@ end
 
 function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′;
                     alg=nothing)
+    W == checkbase(Δ, Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W * V'
     UdΘ = U' * Θ.Z
