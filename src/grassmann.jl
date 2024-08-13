@@ -169,7 +169,7 @@ while the local tangent vector along the retraction curve is
 
 `Z′ = - W * V' * sin(α*S) * S * V + U * cos(α * S) * S * V'`.
 """
-function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α; alg=Polar())
+function retract(W::AbstractTensorMap, Δ::GrassmannTangent, α; alg=SDD())
     W == base(Δ) || throw(ArgumentError("not a valid tangent vector at base point"))
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W * V'
@@ -190,7 +190,7 @@ This is done by solving the equation `Wold * V' * cos(S) * V + U * sin(S) * V = 
 for the isometries `U`, `V`, and `Y`, and the diagonal matrix `S`, and returning
 `Z = U * S * V` and `Y`.
 """
-function invretract(Wold::AbstractTensorMap, Wnew::AbstractTensorMap; alg=Polar()#=I took Polar as the default, this is what Jutho did in the rest of TensorKitManifolds=#) 
+function invretract(Wold::AbstractTensorMap, Wnew::AbstractTensorMap; alg=SDD()) 
     space(Wold) == space(Wnew) || throw(SectorMismatch())
     WodWn = Wold' * Wnew # V' * cos(S) * V * Y
     Wneworth = Wnew - Wold * WodWn
@@ -219,8 +219,7 @@ function relativegauge(W::AbstractTensorMap, V::AbstractTensorMap)
 end
 
 function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′;
-                    alg=Polar())   #I don't see the alg appearing as optional argument for any of the subroutines of this function. Is it truly needed ? Just to be sure I'll keep it here :)
-    W == checkbase(Δ, Θ) || throw(ArgumentError("not a valid tangent vector at base point"))
+                    alg=nothing)   
     U, S, V = Δ.U, Δ.S, Δ.V
     WVd = W * V'
     UdΘ = U' * Θ.Z
@@ -231,7 +230,7 @@ function transport!(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTan
     return GrassmannTangent(W′, Z′)
 end
 function transport(Θ::GrassmannTangent, W::AbstractTensorMap, Δ::GrassmannTangent, α, W′;
-                   alg=Polar()) #same comment as above
+                   alg=nothing) 
     return transport!(copy(Θ), W, Δ, α, W′; alg=alg)
 end
 
