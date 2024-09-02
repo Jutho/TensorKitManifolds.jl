@@ -28,6 +28,9 @@ checkbase(x, y, z, args...) = checkbase(checkbase(x, y), z, args...)
 # the machine epsilon for the elements of an object X, name inspired from eltype
 scalareps(X) = eps(real(scalartype(X)))
 
+# default SVD algorithm used in the algorithms
+default_svd_alg(::AbstractTensorMap) = TensorKit.SVD()
+
 function isisometry(W::AbstractTensorMap; tol=10 * scalareps(W))
     WdW = W' * W
     s = zero(float(real(scalartype(W))))
@@ -61,7 +64,7 @@ end
 
 struct PolarNewton <: TensorKit.OrthogonalFactorizationAlgorithm
 end
-function projectisometric!(W::AbstractTensorMap; alg=Polar())
+function projectisometric!(W::AbstractTensorMap; alg=default_svd_alg(W))
     if alg isa TensorKit.Polar || alg isa TensorKit.SDD
         foreach(blocks(W)) do (c, b)
             return _polarsdd!(b)
@@ -98,7 +101,7 @@ projecthermitian(W::AbstractTensorMap) = projecthermitian!(copy(W))
 projectantihermitian(W::AbstractTensorMap) = projectantihermitian!(copy(W))
 
 function projectisometric(W::AbstractTensorMap;
-                          alg::TensorKit.OrthogonalFactorizationAlgorithm=Polar())
+                          alg=default_svd_alg(W))
     return projectisometric!(copy(W); alg=alg)
 end
 function projectcomplement(X::AbstractTensorMap, W::AbstractTensorMap,
