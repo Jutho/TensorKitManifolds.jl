@@ -8,9 +8,9 @@ const α = 0.75
 
 @testset "Grassmann with space $V" for V in spaces
     for T in (Float64,)
-        W, = leftorth(TensorMap(randn, T, V * V * V, V * V); alg=Polar())
-        X = TensorMap(randn, T, space(W))
-        Y = TensorMap(randn, T, space(W))
+        W, = leftorth(randn(T, V * V * V, V * V); alg=Polar())
+        X = randn(T, space(W))
+        Y = randn(T, space(W))
         Δ = @inferred Grassmann.project(X, W)
         Θ = Grassmann.project(Y, W)
         γ = randn(T)
@@ -42,7 +42,7 @@ const α = 0.75
         @test Grassmann.inner(W2, Δ2, Θ2) ≈ Grassmann.inner(W, Δ, Θ)
         @test Grassmann.inner(W2, Ξ2, Θ2) ≈ Grassmann.inner(W, Ξ, Θ)
 
-        Wend = TensorMap(randhaar, T, codomain(W), domain(W))
+        Wend = randisometry(T, codomain(W), domain(W))
         Δ3, V = Grassmann.invretract(W, Wend)
         @test Wend ≈ retract(W, Δ3, 1)[1] * V
         U = Grassmann.relativegauge(W, Wend)
@@ -53,9 +53,9 @@ end
 
 @testset "Stiefel with space $V" for V in spaces
     for T in (Float64, ComplexF64)
-        W = TensorMap(randhaar, T, V * V * V, V * V)
-        X = TensorMap(randn, T, space(W))
-        Y = TensorMap(randn, T, space(W))
+        W = randisometry(T, V * V * V, V * V)
+        X = randn(T, space(W))
+        Y = randn(T, space(W))
         Δ = @inferred Stiefel.project_euclidean(X, W)
         Θ = Stiefel.project_canonical(Y, W)
         γ = rand()
@@ -116,7 +116,7 @@ end
         @test Stiefel.inner_canonical(W2, Δ2, Θ2) ≈ Stiefel.inner_canonical(W, Δ, Θ)
         @test Stiefel.inner_canonical(W2, Ξ2, Θ2) ≈ Stiefel.inner_canonical(W, Ξ, Θ)
 
-        W3 = projectisometric!(W + 1e-1 * TensorMap(rand, T, codomain(W), domain(W)))
+        W3 = projectisometric!(W + 1e-1 * rand(T, codomain(W), domain(W)))
         Δ3 = Stiefel.invretract(W, W3)
         @test W3 ≈ retract(W, Δ3, 1)[1]
     end
@@ -124,9 +124,9 @@ end
 
 @testset "Unitary with space $V" for V in spaces
     for T in (Float64, ComplexF64)
-        W, = leftorth(TensorMap(randn, T, V * V * V, V * V); alg=Polar())
-        X = TensorMap(randn, T, space(W))
-        Y = TensorMap(randn, T, space(W))
+        W, = leftorth(randn(T, V * V * V, V * V); alg=Polar())
+        X = randn(T, space(W))
+        Y = randn(T, space(W))
         Δ = @inferred Unitary.project(X, W)
         Θ = Unitary.project(Y, W)
         γ = randn()
