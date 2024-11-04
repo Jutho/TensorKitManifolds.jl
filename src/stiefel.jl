@@ -169,19 +169,17 @@ function stiefelexp(W::AbstractTensorMap,
                     α::Real)
     S = spacetype(W)
     G = sectortype(W)
-    Wdata′ = TensorKit.SectorDict{G,storagetype(W)}()
-    Qdata = TensorKit.SectorDict{G,storagetype(W)}()
-    Qdata′ = TensorKit.SectorDict{G,storagetype(W)}()
-    Rdata′ = TensorKit.SectorDict{G,storagetype(W)}()
     dims = TensorKit.SectorDict{G,Int}()
-    for c in blocksectors(W)
-        w′, q, q′, r′ = _stiefelexp(block(W, c), block(A, c), block(Z, c), α)
-        Wdata′[c] = w′
-        Qdata[c] = q
-        Qdata′[c] = q′
-        Rdata′[c] = r′
+    generator = Iterators.map(blocks(W)) do (c, b)
+        w′, q, q′, r′ = _stiefelexp(b, block(A, c), block(Z, c), α)
         dims[c] = size(q, 2)
+        return c => (w′, q, q′, r′)
     end
+    wqqr = TensorKit.SectorDict(generator)
+    Wdata′ = SectorDict(c => w′ for (c, (w′, q, q′, r′)) in wqqr)
+    Qdata = SectorDict(c => q for (c, (w′, q, q′, r′)) in wqqr)
+    Qdata′ = SectorDict(c => q′ for (c, (w′, q, q′, r′)) in wqqr)
+    Rdata′ = SectorDict(c => r′ for (c, (w′, q, q′, r′)) in wqqr)
     V = S(dims)
     W′ = TensorMap(Wdata′, space(W))
     Q = TensorMap(Qdata, codomain(W) ← V)
@@ -201,18 +199,13 @@ end
 function invretract_exp(Wold::AbstractTensorMap, Wnew::AbstractTensorMap;
                         tol=scalareps(Wold)^(2 / 3))
     space(Wold) == space(Wnew) || throw(SectorMismatch())
-
-    S = spacetype(Wold)
-    G = sectortype(Wold)
-    Adata = TensorKit.SectorDict{G,storagetype(Wold)}()
-    Zdata = TensorKit.SectorDict{G,storagetype(Wold)}()
-    for c in blocksectors(Wold)
-        a, q, r = _stiefellog(block(Wold, c), block(Wnew, c); tol=tol)
-        Adata[c] = a
-        Zdata[c] = q * r
+    A = similar(Wold, domain(Wold) ← domain(Wold))
+    Z = similar(Wold, space(Wold))
+    for (c, b) in blocks(Wold)
+        a, q, r = _stiefellog(b, block(Wnew, c); tol)
+        copy!(block(A, c), a)
+        mul!(block(Z, c), q, r)
     end
-    A = TensorMap(Adata, domain(Wold) ← domain(Wold))
-    Z = TensorMap(Zdata, space(Wold))
     return StiefelTangent(Wold, A, Z)
 end
 
