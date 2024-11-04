@@ -167,24 +167,18 @@ function stiefelexp(W::AbstractTensorMap,
                     A::AbstractTensorMap,
                     Z::AbstractTensorMap,
                     α::Real)
-    S = spacetype(W)
-    G = sectortype(W)
-    dims = TensorKit.SectorDict{G,Int}()
-    generator = Iterators.map(blocks(W)) do (c, b)
+    V = fuse(domain(W))
+    W′ = similar(W)
+    Q = similar(W, codomain(W) ← V)
+    Q′ = similar(Q)
+    R′ = similar(W, V ← domain(W))
+    for (c, b) in blocks(W)
         w′, q, q′, r′ = _stiefelexp(b, block(A, c), block(Z, c), α)
-        dims[c] = size(q, 2)
-        return c => (w′, q, q′, r′)
+        copy!(block(W′, c), w′)
+        copy!(block(Q, c), q)
+        copy!(block(Q′, c), q′)
+        copy!(block(R′, c), r′)
     end
-    wqqr = TensorKit.SectorDict(generator)
-    Wdata′ = SectorDict(c => w′ for (c, (w′, q, q′, r′)) in wqqr)
-    Qdata = SectorDict(c => q for (c, (w′, q, q′, r′)) in wqqr)
-    Qdata′ = SectorDict(c => q′ for (c, (w′, q, q′, r′)) in wqqr)
-    Rdata′ = SectorDict(c => r′ for (c, (w′, q, q′, r′)) in wqqr)
-    V = S(dims)
-    W′ = TensorMap(Wdata′, space(W))
-    Q = TensorMap(Qdata, codomain(W) ← V)
-    Q′ = TensorMap(Qdata′, codomain(W) ← V)
-    R′ = TensorMap(Rdata′, V ← domain(W))
     return W′, Q, Q′, R′
 end
 
