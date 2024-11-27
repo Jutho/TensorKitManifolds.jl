@@ -5,9 +5,13 @@ version = "0.7.1"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Manifolds = "1cead3c2-87b3-11e9-0ccd-23c62b72b94e"
+ManifoldsBase = "3362f125-f0bb-47a3-aa74-596ffd7ef2fb"
 TensorKit = "07d1fe3e-3e46-537d-9eac-e9e13d0d4cec"
 
 [compat]
+Manifolds = "0.10.7"
+ManifoldsBase = "0.15.22"
 TensorKit = "0.13"
 julia = "1.10"
 
