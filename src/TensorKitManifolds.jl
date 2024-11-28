@@ -113,5 +113,6 @@ include("auxiliary.jl")
 include("grassmann.jl")
 include("stiefel.jl")
 include("unitary.jl")
+include("euclidean.jl")
 
 end
