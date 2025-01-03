@@ -26,10 +26,11 @@ mutable struct GrassmannTangent{T<:AbstractTensorMap,
                               Z::AbstractTensorMap{TT₂,S,N₁,N₂}) where {TT₁,TT₂,S,N₁,N₂}
         T = typeof(W)
         TT = promote_type(float(scalartype(W)), scalartype(Z))
+        Tr = real(TT)
         M = similarstoragetype(W, TT)
-        Mr = similarstoragetype(W, real(TT))
+        Mr = similarstoragetype(W, Tr)
         TU = tensormaptype(S, N₁, 1, M)
-        TS = isreal(sectortype(S)) ? tensormaptype(S, 1, 1, Mr) : tensormaptype(S, 1, 1, M)
+        TS = DiagonalTensorMap{Tr,S,Mr}
         TV = tensormaptype(S, 1, N₂, M)
         return new{T,TU,TS,TV}(W, Z, nothing, nothing, nothing)
     end
