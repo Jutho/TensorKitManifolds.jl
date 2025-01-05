@@ -249,8 +249,8 @@ function _sincosSV(α::Real, S::AbstractTensorMap, V::AbstractTensorMap)
         bcSV = block(cSV, c)
         bsSV = block(sSV, c)
         bV = block(V, c)
-        Threads.@threads for j in 1:size(bV, 2)
-            @simd for i in 1:size(bV, 1)
+        Threads.@threads for j in axes(bV, 2)
+            @simd for i in axes(bV, 1)
                 sS, cS = sincos(α * bS[i, i])
                 # TODO: we are computing sin and cos above within the loop over j, while it is independent; moving it out the loop requires extra storage though.
                 bsSV[i, j] = sS * bV[i, j]
@@ -264,8 +264,8 @@ end
 function _lmul!(S::AbstractTensorMap, V::AbstractTensorMap)
     @inbounds for (c, bS) in blocks(S)
         bV = block(V, c)
-        Threads.@threads for j in 1:size(bV, 2)
-            @simd for i in 1:size(bV, 1)
+        Threads.@threads for j in axes(bV, 2)
+            @simd for i in axes(bV, 1)
                 bV[i, j] *= bS[i, i]
             end
         end
