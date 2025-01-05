@@ -25,16 +25,18 @@ mutable struct GrassmannTangent{T<:AbstractTensorMap,
     function GrassmannTangent(W::AbstractTensorMap{TT₁,S,N₁,N₂},
                               Z::AbstractTensorMap{TT₂,S,N₁,N₂}) where {TT₁,TT₂,S,N₁,N₂}
         T = typeof(W)
-        TT = promote_type(float(scalartype(W)), scalartype(Z))
-        Tr = real(TT)
-        M = similarstoragetype(W, TT)
-        Mr = similarstoragetype(W, Tr)
-        TU = tensormaptype(S, N₁, 1, M)
-        TS = DiagonalTensorMap{Tr,S,Mr}
-        TV = tensormaptype(S, 1, N₂, M)
+        TU, TS, TV = _tsvd_types(Z)
         return new{T,TU,TS,TV}(W, Z, nothing, nothing, nothing)
     end
 end
+
+# output type of U, S, V in tsvd
+function _tsvd_types(Z::AbstractTensorMap)
+    TUSV = Core.Compiler.return_type(tsvd, Tuple{typeof(Z)})
+    TU, TS, TV, = TUSV.types
+    return TU, TS, TV
+end
+
 function Base.copy(Δ::GrassmannTangent)
     Δ′ = GrassmannTangent(Δ.W, copy(Δ.Z))
     if Base.getfield(Δ, :U) !== nothing
