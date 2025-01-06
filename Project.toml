@@ -1,7 +1,7 @@
 name = "TensorKitManifolds"
 uuid = "11fa318c-39cb-4a83-b1ed-cdc7ba1e3684"
 authors = ["Jutho Haegeman <jutho.haegeman@ugent.be>", "Markus Hauru <markus@mhauru.org>"]
-version = "0.7.1"
+version = "0.7.2"
 
 [deps]
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
