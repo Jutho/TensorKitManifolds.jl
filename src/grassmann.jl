@@ -25,15 +25,18 @@ mutable struct GrassmannTangent{T<:AbstractTensorMap,
     function GrassmannTangent(W::AbstractTensorMap{TT₁,S,N₁,N₂},
                               Z::AbstractTensorMap{TT₂,S,N₁,N₂}) where {TT₁,TT₂,S,N₁,N₂}
         T = typeof(W)
-        TT = promote_type(float(scalartype(W)), scalartype(Z))
-        M = similarstoragetype(W, TT)
-        Mr = similarstoragetype(W, real(TT))
-        TU = tensormaptype(S, N₁, 1, M)
-        TS = isreal(sectortype(S)) ? tensormaptype(S, 1, 1, Mr) : tensormaptype(S, 1, 1, M)
-        TV = tensormaptype(S, 1, N₂, M)
+        TU, TS, TV = _tsvd_types(Z)
         return new{T,TU,TS,TV}(W, Z, nothing, nothing, nothing)
     end
 end
+
+# output type of U, S, V in tsvd
+function _tsvd_types(Z::AbstractTensorMap)
+    TUSV = Core.Compiler.return_type(tsvd, Tuple{typeof(Z)})
+    TU, TS, TV, = TUSV.types
+    return TU, TS, TV
+end
+
 function Base.copy(Δ::GrassmannTangent)
     Δ′ = GrassmannTangent(Δ.W, copy(Δ.Z))
     if Base.getfield(Δ, :U) !== nothing
@@ -246,8 +249,8 @@ function _sincosSV(α::Real, S::AbstractTensorMap, V::AbstractTensorMap)
         bcSV = block(cSV, c)
         bsSV = block(sSV, c)
         bV = block(V, c)
-        Threads.@threads for j in 1:size(bV, 2)
-            @simd for i in 1:size(bV, 1)
+        Threads.@threads for j in axes(bV, 2)
+            @simd for i in axes(bV, 1)
                 sS, cS = sincos(α * bS[i, i])
                 # TODO: we are computing sin and cos above within the loop over j, while it is independent; moving it out the loop requires extra storage though.
                 bsSV[i, j] = sS * bV[i, j]
@@ -261,8 +264,8 @@ end
 function _lmul!(S::AbstractTensorMap, V::AbstractTensorMap)
     @inbounds for (c, bS) in blocks(S)
         bV = block(V, c)
-        Threads.@threads for j in 1:size(bV, 2)
-            @simd for i in 1:size(bV, 1)
+        Threads.@threads for j in axes(bV, 2)
+            @simd for i in axes(bV, 1)
                 bV[i, j] *= bS[i, i]
             end
         end
